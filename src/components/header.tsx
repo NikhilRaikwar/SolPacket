@@ -13,6 +13,7 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const isDashboard = pathname === "/dashboard";
+  const isClaimPage = pathname?.startsWith("/claim");
   const { connected, disconnect } = useWallet();
   const [showDisconnect, setShowDisconnect] = useState(false);
 
@@ -54,7 +55,7 @@ export function Header() {
               )}
             </div>
           ) : (
-            <WalletButton />
+            <WalletButton disableRedirect={isClaimPage} />
           )}
         </div>
       </div>
