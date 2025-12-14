@@ -100,20 +100,18 @@ export default function ClaimPage() {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
-      e.nativeEvent.preventDefault();
-      e.nativeEvent.stopImmediatePropagation();
     }
     
     if (!connected || !publicKey || !sendTransaction || !gift) {
       toast.error("Please connect your wallet first");
-      return;
+      return false;
     }
 
     if (publicKey.toBase58() !== gift.recipientPubKey) {
       setStatus("wrong_recipient");
       setErrorMessage("This gift is restricted to a different wallet address");
       toast.error("You are not the intended recipient");
-      return;
+      return false;
     }
 
     setStatus("claiming");
@@ -146,6 +144,7 @@ export default function ClaimPage() {
       setTxSignature(signature);
       setStatus("success");
       toast.success(`Successfully claimed ${gift.amount} USDC from escrow!`);
+      return true;
 
     } catch (error: any) {
       console.error("Claim error:", error);
@@ -162,6 +161,7 @@ export default function ClaimPage() {
         setErrorMessage(error?.message || "Transaction failed");
         toast.error("Claim failed");
       }
+      return false;
     }
   };
 
