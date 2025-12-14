@@ -3,7 +3,7 @@
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface WalletButtonProps {
   disableRedirect?: boolean;
@@ -12,25 +12,18 @@ interface WalletButtonProps {
 export function WalletButton({ disableRedirect = false }: WalletButtonProps) {
   const { connected } = useWallet();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && connected && !disableRedirect) {
+    if (connected && !disableRedirect && !hasRedirected.current) {
+      hasRedirected.current = true;
       router.push("/dashboard");
     }
-  }, [mounted, connected, disableRedirect, router]);
-
-  if (!mounted) {
-    return null;
-  }
+  }, [connected, disableRedirect, router]);
 
   return (
-    <div className="wallet-adapter-wrapper">
-      <WalletMultiButton />
+    <div className="wallet-adapter-wrapper" suppressHydrationWarning>
+      <WalletMultiButton suppressHydrationWarning />
     </div>
   );
 }
