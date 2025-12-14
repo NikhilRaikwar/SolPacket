@@ -40,12 +40,6 @@ function HeroSection() {
   const { connected } = useWallet();
   const router = useRouter();
   
-  const handleCreateGift = () => {
-    if (connected) {
-      router.push("/dashboard");
-    }
-  };
-  
   return (
     <div className="relative z-10 pt-32 pb-20 px-4 hero-section">
       <div className="max-w-7xl mx-auto">
@@ -80,21 +74,9 @@ function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            {connected ? (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleCreateGift}
-                className="px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-violet-500/50 transition-all duration-200 flex items-center gap-2"
-              >
-                <Gift className="h-5 w-5" />
-                Create Gift
-              </motion.button>
-            ) : (
-              <div>
-                <WalletButton />
-              </div>
-            )}
+            <div className="wallet-connect-button">
+              <WalletButton />
+            </div>
             <Link href="/#faq">
               <motion.button
                 whileHover={{ scale: 1.05 }}
