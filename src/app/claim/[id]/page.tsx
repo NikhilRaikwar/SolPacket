@@ -345,7 +345,7 @@ export default function ClaimPage() {
                   Connect your wallet to claim this gift
                 </p>
                 <div className="flex justify-center">
-                  <WalletButton disableRedirect />
+                  <WalletButton />
                 </div>
               </div>
             ) : (
