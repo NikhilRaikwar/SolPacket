@@ -1,7 +1,8 @@
 "use client";
 
 import { Header } from "@/components/header";
-import { Shield, Sparkles, QrCode, Lock, Zap, Gift, ArrowRight, Check, ChevronDown, Github, Twitter } from "lucide-react";
+import { Shield, Sparkles, QrCode, Lock, Zap, Gift, ArrowRight, Check, ChevronDown, Github, Twitter, ExternalLink, Rocket } from "lucide-react";
+import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -9,6 +10,8 @@ import Image from "next/image";
 import { WalletButton } from "@/components/wallet-button";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
+import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
+import { cn } from "@/lib/utils";
 
 export default function HomePage() {
   const { connected } = useWallet();
@@ -46,6 +49,19 @@ function HeroSection() {
           transition={{ duration: 0.6 }}
           className="text-center"
         >
+          <div className="z-10 flex min-h-16 items-center justify-center mb-8">
+            <div
+              className={cn(
+                "group rounded-full border border-black/5 bg-neutral-100 text-base text-white transition-all ease-in hover:cursor-pointer hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+              )}
+            >
+              <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
+                <span>✨ Introducing SolPacket</span>
+                <ArrowRightIcon className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
+              </AnimatedShinyText>
+            </div>
+          </div>
+
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
             Gift Crypto Like Cash
           </h1>
@@ -425,6 +441,9 @@ function Footer() {
               </a>
               <a href="https://github.com/NikhilRaikwar/SolPacket" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
                 <Github className="h-4 w-4 text-zinc-400" />
+              </a>
+              <a href="https://www.encodeclub.com/my-programmes/solana-build-competition" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
+                <ExternalLink className="h-4 w-4 text-zinc-400" />
               </a>
             </div>
           </div>
