@@ -41,7 +41,7 @@ type ClaimStatus = "loading" | "ready" | "claiming" | "success" | "error" | "alr
 export default function ClaimPage() {
   const params = useParams();
   const router = useRouter();
-  const { connected, publicKey, sendTransaction, disconnect } = useWallet();
+  const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
   
   const [gift, setGift] = useState<EscrowGift | null>(null);
@@ -51,14 +51,6 @@ export default function ClaimPage() {
   const [showScanner, setShowScanner] = useState<boolean>(false);
 
   const giftId = params.id as string;
-
-  useEffect(() => {
-    return () => {
-      if (connected) {
-        disconnect();
-      }
-    };
-  }, [connected, disconnect]);
 
   useEffect(() => {
     const checkGift = async () => {
