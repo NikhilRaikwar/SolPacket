@@ -45,8 +45,11 @@ This application showcases Solana's unique strengths:
 
 ## 🏗️ Technical Architecture
 
+![SOLPACKET Architecture](./public/solpacket.png)
+*Complete system architecture showing the flow from UI → Smart Contract → Database with all components and connections*
+
 ### Smart Contract (Anchor/Rust)
-- **Program ID**: `8dDBL1hy8229irhfS6DGhHfV3wtdsxCYnL4dYVJURG65` (Devnet)
+- **Program ID**: `AiebTbnydag8QCPFhapiuPzd5hy8MvKNXeVVYR2dZ94Z` (Devnet)
 - **PDA Derivation**: Seed-based escrow accounts per gift
 - **Instructions**: `create_gift`, `claim_gift`, `recover_expired`
 

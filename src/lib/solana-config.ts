@@ -1,7 +1,7 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 
 export const NETWORK = "devnet";
-export const HELIUS_API_KEY = process.env.NEXT_PUBLIC_HELIUS_API_KEY || "d8e6c21f-7aff-4084-9d2e-faa6d962e246";
+export const HELIUS_API_KEY = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
 export const SOLANA_RPC_ENDPOINT = `https://devnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 export const SOLANA_WSS_ENDPOINT = `wss://devnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 export const HELIUS_API_BASE = `https://api-devnet.helius-rpc.com`;
