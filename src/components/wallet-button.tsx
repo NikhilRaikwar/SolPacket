@@ -5,15 +5,19 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export function WalletButton() {
+interface WalletButtonProps {
+  disableRedirect?: boolean;
+}
+
+export function WalletButton({ disableRedirect = false }: WalletButtonProps) {
   const { connected } = useWallet();
   const router = useRouter();
 
   useEffect(() => {
-    if (connected) {
+    if (connected && !disableRedirect) {
       router.push("/dashboard");
     }
-  }, [connected, router]);
+  }, [connected, disableRedirect, router]);
 
   return (
     <div className="wallet-adapter-wrapper">
