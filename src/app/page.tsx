@@ -1,10 +1,11 @@
 "use client";
 
 import { Header } from "@/components/header";
-import { Shield, Sparkles, QrCode, Lock, Zap, Gift, ArrowRight, Check, ChevronDown, Github, Twitter, MessageCircle } from "lucide-react";
+import { Shield, Sparkles, QrCode, Lock, Zap, Gift, ArrowRight, Check, ChevronDown, Github, Twitter } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { WalletButton } from "@/components/wallet-button";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
@@ -12,16 +13,6 @@ import { useRouter } from "next/navigation";
 export default function HomePage() {
   const { connected } = useWallet();
   const router = useRouter();
-
-  useEffect(() => {
-    if (connected) {
-      router.push("/dashboard");
-    }
-  }, [connected, router]);
-
-  if (connected) {
-    return null;
-  }
 
   return (
     <main className="min-h-screen bg-zinc-950 relative overflow-hidden">
@@ -44,9 +35,10 @@ export default function HomePage() {
 
 function HeroSection() {
   const { connected } = useWallet();
+  const router = useRouter();
   
   return (
-    <div className="relative z-10 pt-32 pb-20 px-4">
+    <div className="relative z-10 pt-32 pb-20 px-4 hero-section">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -54,28 +46,30 @@ function HeroSection() {
           transition={{ duration: 0.6 }}
           className="text-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 mb-8">
-            <Sparkles className="h-4 w-4 text-violet-400" />
-            <span className="text-sm text-violet-300 font-medium">
-              USDC Gift Cards on Solana
-            </span>
-          </div>
-
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
-            Send USDC Gifts
-            <br />
-            <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-              100% Private
-            </span>
+            Gift Crypto Like Cash
           </h1>
 
           <p className="text-xl sm:text-2xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Create private USDC gift cards with escrow protection. Recipients claim funds
-            directly from the blockchain with QR codes.
+            Create private, expiring SOL & USDC drops with one tap. Share a QR, they scan and claim — powered by Solana speed.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <WalletButton />
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (connected) {
+                  router.push("/dashboard/create-form");
+                } else {
+                  router.push("/login");
+                }
+              }}
+              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-violet-500/50 transition-all duration-200 flex items-center gap-2"
+            >
+              <Gift className="h-5 w-5" />
+              Create Gift
+            </motion.button>
             <Link href="/#faq">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -417,26 +411,20 @@ function Footer() {
         <div className="flex flex-col items-center justify-center gap-8 mb-12">
           <div className="text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
+              <Image src="/logo.png" alt="SOLPACKET Logo" width={40} height={40} className="rounded-xl" />
               <div>
                 <h3 className="text-lg font-bold text-white">SOLPACKET</h3>
-                <p className="text-xs text-zinc-500">USDC Gift Cards on Solana</p>
               </div>
             </div>
             <p className="text-zinc-400 mb-4">
               Secure USDC gift cards with escrow protection on Solana.
             </p>
             <div className="flex items-center justify-center gap-4">
-              <a href="#" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
+              <a href="https://x.com/solpacket" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
                 <Twitter className="h-4 w-4 text-zinc-400" />
               </a>
-              <a href="#" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
+              <a href="https://github.com/NikhilRaikwar/SolPacket" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
                 <Github className="h-4 w-4 text-zinc-400" />
-              </a>
-              <a href="#" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
-                <MessageCircle className="h-4 w-4 text-zinc-400" />
               </a>
             </div>
           </div>

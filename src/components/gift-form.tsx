@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
-import { Gift, Sparkles, MessageSquare, Loader2, User, ArrowLeft } from "lucide-react";
+import { Gift, Sparkles, MessageSquare, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,6 @@ import {
 } from "@/lib/escrow-utils";
 import { QRCodeDisplay } from "./qr-code-display";
 import { toast } from "sonner";
-import Link from "next/link";
 
 export function GiftForm() {
   const router = useRouter();
@@ -152,40 +151,19 @@ export function GiftForm() {
     return (
       <div className="space-y-6">
         <QRCodeDisplay gift={createdGift} />
-        <div className="flex gap-3">
-          <Button
-            onClick={resetForm}
-            variant="outline"
-            className="flex-1 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
-          >
-            Create Another Gift
-          </Button>
-          <Link href="/dashboard" className="flex-1">
-            <Button
-              variant="outline"
-              className="w-full border-zinc-700 text-zinc-300"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
+        <Button
+          onClick={resetForm}
+          variant="outline"
+          className="w-full border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+        >
+          Create Another Gift
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Link href="/dashboard">
-        <Button
-          variant="ghost"
-          className="text-zinc-400 hover:text-white -ml-2 mb-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
-        </Button>
-      </Link>
-
       <div className="flex items-center gap-3 mb-6">
         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center">
           <Gift className="h-6 w-6 text-violet-400" />

@@ -37,9 +37,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-../target
-
+# Solana/Anchor artifacts
 programs/zk-escrow/target/
+/target/
+*.so
+*-keypair.json
+/target/
 
 # environment variables
 .env
@@ -62,5 +65,6 @@ security.json
 
 # OS
 Thumbs.db
+
 target/deploy/zk_escrow-keypair.json
 target/deploy/zk_escrow.so

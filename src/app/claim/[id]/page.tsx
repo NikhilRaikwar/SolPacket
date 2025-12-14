@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import {
   Gift,
   Shield,
@@ -15,6 +16,8 @@ import {
   Clock,
   AlertTriangle,
   User,
+  Upload,
+  QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
@@ -28,10 +31,16 @@ import {
 import { toast } from "sonner";
 import Link from "next/link";
 
-type ClaimStatus = "loading" | "ready" | "claiming" | "success" | "error" | "already_claimed" | "expired" | "not_found" | "wrong_recipient";
+const Scanner = dynamic(
+  () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
+  { ssr: false }
+);
+
+type ClaimStatus = "loading" | "ready" | "claiming" | "success" | "error" | "already_claimed" | "expired" | "not_found" | "wrong_recipient" | "scanning";
 
 export default function ClaimPage() {
   const params = useParams();
+  const router = useRouter();
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
   
@@ -39,13 +48,13 @@ export default function ClaimPage() {
   const [status, setStatus] = useState<ClaimStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [txSignature, setTxSignature] = useState<string>("");
+  const [showScanner, setShowScanner] = useState<boolean>(false);
 
   const giftId = params.id as string;
 
   useEffect(() => {
     const checkGift = async () => {
-      if (!giftId) {
-        setStatus("not_found");
+      if (!giftId || giftId === "scan") {
         return;
       }
 
@@ -88,7 +97,12 @@ export default function ClaimPage() {
   }, [giftId, connection]);
 
   const handleClaim = async (e?: React.MouseEvent) => {
-    e?.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.nativeEvent.preventDefault();
+      e.nativeEvent.stopImmediatePropagation();
+    }
     
     if (!connected || !publicKey || !sendTransaction || !gift) {
       toast.error("Please connect your wallet first");
@@ -151,6 +165,24 @@ export default function ClaimPage() {
     }
   };
 
+  const handleQRScan = async (result: string) => {
+    try {
+      const url = new URL(result);
+      const pathSegments = url.pathname.split("/");
+      const scannedGiftId = pathSegments[pathSegments.length - 1];
+      
+      if (scannedGiftId) {
+        toast.success("QR Code scanned successfully!");
+        setShowScanner(false);
+        router.push(`/claim/${scannedGiftId}`);
+      } else {
+        toast.error("Invalid QR code");
+      }
+    } catch (error) {
+      toast.error("Invalid QR code format");
+    }
+  };
+
   const renderContent = () => {
     switch (status) {
       case "loading":
@@ -169,18 +201,27 @@ export default function ClaimPage() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Gift Not Found</h2>
             <p className="text-zinc-400 mb-6">This cash drop doesn&apos;t exist or the link is invalid.</p>
-            <div className="flex gap-3 justify-center">
-              <Link href="/">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Create Your Own
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  Back to Dashboard
-                </Button>
-              </Link>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => setShowScanner(true)}
+                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+              >
+                <QrCode className="h-4 w-4 mr-2" />
+                Scan QR Code
+              </Button>
+              <div className="flex gap-3 justify-center">
+                <Link href="/">
+                  <Button variant="outline" className="border-zinc-700 text-zinc-300">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Create Your Own
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button variant="outline" className="border-zinc-700 text-zinc-300">
+                    Back to Dashboard
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         );
@@ -308,14 +349,29 @@ export default function ClaimPage() {
                 </div>
               </div>
             ) : (
-              <Button
-                type="button"
-                onClick={handleClaim}
-                className="w-full h-14 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-200 text-lg"
-              >
-                <Sparkles className="h-5 w-5 mr-2" />
-                Claim {gift?.amount} USDC
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleClaim(e);
+                  }}
+                  className="w-full h-14 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-200 text-lg"
+                >
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Claim {gift?.amount} USDC
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  variant="outline"
+                  className="w-full border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+                >
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Scan Another Gift
+                </Button>
+              </div>
             )}
           </div>
         );
@@ -399,6 +455,43 @@ export default function ClaimPage() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.1),transparent_50%)]" />
 
       <Header />
+
+      {showScanner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 p-6 space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Scan Gift QR Code</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowScanner(false)}
+                className="text-zinc-400 hover:text-white"
+              >
+                <XCircle className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black">
+              <Scanner
+                onScan={(result) => {
+                  if (result && result.length > 0) {
+                    handleQRScan(result[0].rawValue);
+                  }
+                }}
+                components={{
+                  audio: false,
+                  finder: true,
+                }}
+                styles={{
+                  container: { width: "100%", height: "100%" },
+                }}
+              />
+            </div>
+            <p className="text-sm text-zinc-400 text-center">
+              Position the QR code within the frame to scan
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="relative z-10 pt-24 pb-16 px-4 min-h-screen flex items-center justify-center">
         <motion.div

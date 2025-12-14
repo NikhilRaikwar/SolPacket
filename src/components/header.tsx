@@ -4,8 +4,23 @@ import { Zap } from "lucide-react";
 import { WalletButton } from "./wallet-button";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useState } from "react";
 
 export function Header() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isDashboard = pathname === "/dashboard";
+  const { connected, disconnect } = useWallet();
+  const [showDisconnect, setShowDisconnect] = useState(false);
+
+  const handleDisconnect = async () => {
+    await disconnect();
+    router.push('/');
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-zinc-950/80 border-b border-zinc-800/50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -19,7 +34,28 @@ export function Header() {
             <Zap className="h-3 w-3 text-emerald-400" />
             <span className="text-xs text-emerald-400 font-medium">Devnet</span>
           </div>
-          <WalletButton />
+          {isDashboard && connected ? (
+            <div
+              className="relative"
+              onMouseEnter={() => setShowDisconnect(true)}
+              onMouseLeave={() => setShowDisconnect(false)}
+            >
+              {showDisconnect ? (
+                <button
+                  onClick={handleDisconnect}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
+                  Disconnect
+                </button>
+              ) : (
+                <div className="px-3 py-1.5 text-xs font-medium rounded-md bg-violet-600 text-white cursor-pointer">
+                  Connected
+                </div>
+              )}
+            </div>
+          ) : (
+            <WalletButton />
+          )}
         </div>
       </div>
     </header>

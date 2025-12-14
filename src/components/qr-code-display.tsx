@@ -1,8 +1,10 @@
 "use client";
 
 import { QRCodeSVG } from "qrcode.react";
-import { CheckCircle, Shield, ExternalLink } from "lucide-react";
+import { CheckCircle, Shield, ExternalLink, Download } from "lucide-react";
 import { type EscrowGift } from "@/lib/escrow-utils";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
   gift: EscrowGift;
@@ -16,6 +18,36 @@ export function QRCodeDisplay({ gift }: QRCodeDisplayProps) {
 
   const claimUrl = generateClaimUrl();
 
+  const downloadQRCode = () => {
+    const svg = document.getElementById("qr-code-svg");
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `gift-qr-${gift.id}.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success("QR code downloaded!");
+        }
+      });
+    };
+
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -27,7 +59,8 @@ export function QRCodeDisplay({ gift }: QRCodeDisplayProps) {
         <p className="text-zinc-400">Share this QR code with the recipient to claim</p>
       </div>
 
-      <div className="flex justify-center">
+      {/* Changed layout to flex-col and added a download button */}
+      <div className="flex flex-col items-center gap-4">
         <div className="p-6 bg-white rounded-3xl shadow-2xl shadow-violet-500/20">
           <QRCodeSVG
             id="qr-code-svg"
@@ -45,6 +78,15 @@ export function QRCodeDisplay({ gift }: QRCodeDisplayProps) {
             }}
           />
         </div>
+        
+        <Button
+          onClick={downloadQRCode}
+          variant="outline"
+          className="border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Download QR Code
+        </Button>
       </div>
 
       <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 space-y-3">

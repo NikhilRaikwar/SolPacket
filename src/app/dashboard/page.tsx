@@ -4,19 +4,27 @@ import { useEffect, useState } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 import { motion } from "framer-motion";
-import { Gift, Send, Inbox, Loader2, ExternalLink, CheckCircle, Clock, Copy, Plus, DollarSign, TrendingUp, BarChart, RefreshCw } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Gift, Send, Inbox, Loader2, ExternalLink, CheckCircle, Clock, Copy, Plus, DollarSign, TrendingUp, BarChart, RefreshCw, QrCode, XCircle, Upload } from "lucide-react";
 import { Header } from "@/components/header";
 import { WalletButton } from "@/components/wallet-button";
 import { Button } from "@/components/ui/button";
-import { getEscrowGiftsBySender, getEscrowGiftsByRecipient, type EscrowGift } from "@/lib/escrow-utils";
+import { getEscrowGiftsBySender, getEscrowGiftsByRecipient, getEscrowGiftById, type EscrowGift } from "@/lib/escrow-utils";
 import { GiftForm } from "@/components/gift-form";
 import { USDC_MINT_DEVNET } from "@/lib/solana-config";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+const Scanner = dynamic(
+  () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
+  { ssr: false }
+);
 
 export default function DashboardPage() {
   const { connected, publicKey } = useWallet();
   const { connection } = useConnection();
+  const router = useRouter();
   
   const [sentGifts, setSentGifts] = useState<EscrowGift[]>([]);
   const [receivableGifts, setReceivableGifts] = useState<EscrowGift[]>([]);
@@ -24,6 +32,9 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "create" | "claim">("overview");
   const [usdcBalance, setUsdcBalance] = useState<number>(0);
+  const [showScanner, setShowScanner] = useState<boolean>(false);
+  const [uploadMode, setUploadMode] = useState<boolean>(false);
+  const [verifying, setVerifying] = useState<boolean>(false);
 
   const fetchData = async () => {
     if (!connected || !publicKey) {
@@ -74,6 +85,117 @@ export default function DashboardPage() {
     const url = `${window.location.origin}/claim/${giftId}`;
     navigator.clipboard.writeText(url);
     toast.success("Claim link copied!");
+  };
+
+  const handleQRScan = async (result: string) => {
+    try {
+      setVerifying(true);
+      const url = new URL(result);
+      const pathSegments = url.pathname.split("/");
+      const scannedGiftId = pathSegments[pathSegments.length - 1];
+      
+      if (!scannedGiftId) {
+        toast.error("Invalid QR code");
+        setVerifying(false);
+        return;
+      }
+
+      const gift = await getEscrowGiftById(scannedGiftId);
+      
+      if (!gift) {
+        toast.error("Gift card not found");
+        setVerifying(false);
+        return;
+      }
+
+      if (gift.claimed) {
+        toast.error("This gift has already been claimed");
+        setVerifying(false);
+        return;
+      }
+
+      if (Date.now() > gift.expiresAt) {
+        toast.error("This gift has expired");
+        setVerifying(false);
+        return;
+      }
+
+      if (!publicKey) {
+        toast.error("Please connect your wallet first");
+        setVerifying(false);
+        return;
+      }
+
+      if (gift.recipientPubKey !== publicKey.toBase58()) {
+        toast.error("This gift is not for your wallet address");
+        setVerifying(false);
+        return;
+      }
+
+      toast.success("Gift verified! Redirecting to claim page...");
+      setShowScanner(false);
+      setVerifying(false);
+      router.push(`/claim/${scannedGiftId}`);
+    } catch (error) {
+      toast.error("Invalid QR code format");
+      setVerifying(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setVerifying(true);
+      const imageUrl = URL.createObjectURL(file);
+      const img = new Image();
+      
+      img.onload = async () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            toast.error("Failed to process image");
+            setVerifying(false);
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          const { scanImage } = await import("@yudiel/react-qr-scanner");
+          const result = await scanImage(file);
+          
+          if (result && result.length > 0) {
+            await handleQRScan(result[0].rawValue);
+          } else {
+            toast.error("No QR code found in image");
+            setVerifying(false);
+          }
+        } catch (error) {
+          console.error("QR scan error:", error);
+          toast.error("Failed to scan QR code from image");
+          setVerifying(false);
+        } finally {
+          URL.revokeObjectURL(imageUrl);
+        }
+      };
+
+      img.onerror = () => {
+        toast.error("Failed to load image");
+        setVerifying(false);
+        URL.revokeObjectURL(imageUrl);
+      };
+
+      img.src = imageUrl;
+    } catch (error) {
+      console.error("File upload error:", error);
+      toast.error("Failed to upload file");
+      setVerifying(false);
+    }
   };
 
   const totalCreated = sentGifts.length;
@@ -149,15 +271,18 @@ export default function DashboardPage() {
           )}
           
           {!isSent && !gift.claimed && !isExpired && (
-            <Link href={`/claim/${gift.giftId}`} className="flex-1 min-w-[120px]">
-              <Button
-                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
-                size="sm"
-              >
-                <Gift className="h-4 w-4 mr-2" />
-                Claim Gift
-              </Button>
-            </Link>
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                router.push(`/claim/${gift.giftId}`);
+              }}
+              className="flex-1 min-w-[120px] bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <Gift className="h-4 w-4" />
+              Claim Gift
+            </Button>
           )}
 
           {gift.txSignature && (
@@ -165,15 +290,14 @@ export default function DashboardPage() {
               href={`https://explorer.solana.com/tx/${gift.txSignature}?cluster=devnet`}
               target="_blank"
               rel="noopener noreferrer"
-              title="View creation transaction"
-              className="inline-flex"
             >
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10"
+                className="text-xs border-zinc-700 text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10"
               >
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Creation Link
               </Button>
             </a>
           )}
@@ -182,15 +306,14 @@ export default function DashboardPage() {
             href={`https://explorer.solana.com/address/${gift.pdaAddress}?cluster=devnet`}
             target="_blank"
             rel="noopener noreferrer"
-            title="View PDA escrow account"
-            className="inline-flex"
           >
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+              className="text-xs border-zinc-700 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-3 w-3 mr-1" />
+              PDA Escrow Link
             </Button>
           </a>
         </div>
@@ -204,6 +327,98 @@ export default function DashboardPage() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.1),transparent_50%)]" />
 
       <Header />
+
+      {showScanner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 p-6 space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Scan Gift QR Code</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowScanner(false);
+                  setUploadMode(false);
+                  setVerifying(false);
+                }}
+                className="text-zinc-400 hover:text-white"
+              >
+                <XCircle className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {verifying ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-12 w-12 text-violet-400 animate-spin mb-4" />
+                <p className="text-zinc-400">Verifying gift card...</p>
+              </div>
+            ) : uploadMode ? (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center">
+                  <Upload className="h-12 w-12 text-zinc-500 mx-auto mb-4" />
+                  <p className="text-sm text-zinc-400 mb-4">
+                    Upload a QR code image to verify and claim your gift
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="qr-upload"
+                  />
+                  <label htmlFor="qr-upload">
+                    <Button
+                      type="button"
+                      className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                      onClick={() => document.getElementById("qr-upload")?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose Image
+                    </Button>
+                  </label>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full border-zinc-700 text-zinc-300"
+                  onClick={() => setUploadMode(false)}
+                >
+                  Scan with Camera
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black">
+                  <Scanner
+                    onScan={(result) => {
+                      if (result && result.length > 0) {
+                        handleQRScan(result[0].rawValue);
+                      }
+                    }}
+                    components={{
+                      audio: false,
+                      finder: true,
+                    }}
+                    styles={{
+                      container: { width: "100%", height: "100%" },
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-zinc-400 text-center">
+                  Position the QR code within the frame to scan
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full border-zinc-700 text-zinc-300"
+                  onClick={() => setUploadMode(true)}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload QR Code Image
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="relative z-10 pt-24 pb-16 px-4">
         <div className="max-w-7xl mx-auto">
@@ -398,16 +613,26 @@ export default function DashboardPage() {
                 )}
 
                 {activeTab === "claim" && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {receivableGifts.length === 0 ? (
-                      <div className="col-span-full text-center py-16 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
-                        <Inbox className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-4" />
-                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No Claimable Gifts</h3>
-                        <p className="text-zinc-400">You don't have any gifts to claim</p>
-                      </div>
-                    ) : (
-                      receivableGifts.map((gift) => renderGiftCard(gift, false))
-                    )}
+                  <div className="space-y-4">
+                    <Button
+                      onClick={() => setShowScanner(true)}
+                      className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                    >
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Scan Gift QR Code
+                    </Button>
+                    
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {receivableGifts.length === 0 ? (
+                        <div className="col-span-full text-center py-16 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
+                          <Inbox className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-4" />
+                          <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No Claimable Gifts</h3>
+                          <p className="text-zinc-400">You don't have any gifts to claim</p>
+                        </div>
+                      ) : (
+                        receivableGifts.map((gift) => renderGiftCard(gift, false))
+                      )}
+                    </div>
                   </div>
                 )}
               </>
