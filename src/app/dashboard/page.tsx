@@ -81,6 +81,12 @@ export default function DashboardPage() {
     fetchData();
   }, [connected, publicKey, connection]);
 
+  useEffect(() => {
+    if (!connected && publicKey === null) {
+      router.push("/");
+    }
+  }, [connected, publicKey, router]);
+
   const copyClaimLink = (giftId: string) => {
     const url = `${window.location.origin}/claim/${giftId}`;
     navigator.clipboard.writeText(url);
