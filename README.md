@@ -50,6 +50,7 @@ This application showcases Solana's unique strengths:
 
 ### Smart Contract (Anchor/Rust)
 - **Program ID**: `AiebTbnydag8QCPFhapiuPzd5hy8MvKNXeVVYR2dZ94Z` (Devnet)
+- **Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/AiebTbnydag8QCPFhapiuPzd5hy8MvKNXeVVYR2dZ94Z?cluster=devnet)
 - **PDA Derivation**: Seed-based escrow accounts per gift
 - **Instructions**: `create_gift`, `claim_gift`, `recover_expired`
 
