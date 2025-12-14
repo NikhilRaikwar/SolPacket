@@ -63,7 +63,10 @@ function HeroSection() {
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
-            Gift Crypto Like Cash
+            Red Packets <br />
+            Reborn on Solana
+
+
           </h1>
 
           <p className="text-xl sm:text-2xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
