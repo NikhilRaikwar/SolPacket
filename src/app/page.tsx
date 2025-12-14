@@ -445,9 +445,6 @@ function Footer() {
               <a href="https://github.com/NikhilRaikwar/SolPacket" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
                 <Github className="h-4 w-4 text-zinc-400" />
               </a>
-              <a href="https://www.encodeclub.com/my-programmes/solana-build-competition" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
-                <ExternalLink className="h-4 w-4 text-zinc-400" />
-              </a>
             </div>
           </div>
         </div>
