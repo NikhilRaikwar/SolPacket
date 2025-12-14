@@ -1,0 +1,140 @@
+{
+  "address": "AiebTbnydag8QCPFhapiuPzd5hy8MvKNXeVVYR2dZ94Z",
+  "metadata": {
+    "name": "zk_escrow",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "ZK QR Cash Escrow Program with PDA Vault - USDC Only"
+  },
+  "instructions": [
+    {
+      "name": "claim_gift",
+      "discriminator": [100, 71, 251, 14, 225, 15, 243, 196],
+      "accounts": [
+        {
+          "name": "escrow_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [101, 115, 99, 114, 111, 119] },
+              { "kind": "account", "path": "escrow_state.gift_id", "account": "EscrowState" }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [118, 97, 117, 108, 116] },
+              { "kind": "account", "path": "escrow_state.gift_id", "account": "EscrowState" }
+            ]
+          },
+          "relations": ["escrow_state"]
+        },
+        { "name": "recipient", "writable": true, "signer": true },
+        { "name": "recipient_token_account", "writable": true },
+        { "name": "token_program", "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_gift",
+      "discriminator": [27, 106, 118, 72, 118, 149, 101, 149],
+      "accounts": [
+        {
+          "name": "escrow_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [101, 115, 99, 114, 111, 119] },
+              { "kind": "arg", "path": "gift_id" }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [118, 97, 117, 108, 116] },
+              { "kind": "arg", "path": "gift_id" }
+            ]
+          }
+        },
+        { "name": "sender", "writable": true, "signer": true },
+        { "name": "sender_token_account", "writable": true },
+        { "name": "mint" },
+        { "name": "token_program", "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+        { "name": "system_program", "address": "11111111111111111111111111111111" }
+      ],
+      "args": [
+        { "name": "gift_id", "type": "string" },
+        { "name": "amount", "type": "u64" },
+        { "name": "recipient", "type": "pubkey" },
+        { "name": "bump", "type": "u8" }
+      ]
+    },
+    {
+      "name": "refund_gift",
+      "discriminator": [55, 32, 33, 189, 203, 108, 48, 9],
+      "accounts": [
+        {
+          "name": "escrow_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [101, 115, 99, 114, 111, 119] },
+              { "kind": "account", "path": "escrow_state.gift_id", "account": "EscrowState" }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [118, 97, 117, 108, 116] },
+              { "kind": "account", "path": "escrow_state.gift_id", "account": "EscrowState" }
+            ]
+          },
+          "relations": ["escrow_state"]
+        },
+        { "name": "sender", "writable": true, "signer": true, "relations": ["escrow_state"] },
+        { "name": "sender_token_account", "writable": true },
+        { "name": "token_program", "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "EscrowState",
+      "discriminator": [19, 90, 148, 111, 55, 130, 229, 108]
+    }
+  ],
+  "errors": [
+    { "code": 6000, "name": "GiftIdTooLong", "msg": "Gift ID cannot exceed 64 characters" },
+    { "code": 6001, "name": "InvalidAmount", "msg": "Amount must be greater than zero" },
+    { "code": 6002, "name": "AlreadyClaimed", "msg": "Gift has already been claimed" },
+    { "code": 6003, "name": "UnauthorizedRecipient", "msg": "Only the designated recipient can claim this gift" },
+    { "code": 6004, "name": "UnauthorizedSender", "msg": "Only the sender can refund this gift" }
+  ],
+  "types": [
+    {
+      "name": "EscrowState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "sender", "type": "pubkey" },
+          { "name": "recipient", "type": "pubkey" },
+          { "name": "amount", "type": "u64" },
+          { "name": "gift_id", "type": "string" },
+          { "name": "claimed", "type": "bool" },
+          { "name": "bump", "type": "u8" },
+          { "name": "vault", "type": "pubkey" }
+        ]
+      }
+    }
+  ]
+}
