@@ -1,16 +1,19 @@
 "use client";
 
-import { QRCodeSVG } from "qrcode.react";
-import { CheckCircle, Shield, ExternalLink, Download } from "lucide-react";
+import { QRCode } from "react-qrcode-logo";
+import { CheckCircle, Shield, ExternalLink, Download, Copy, Share2 } from "lucide-react";
 import { type EscrowGift } from "@/lib/escrow-utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useRef } from "react";
 
 interface QRCodeDisplayProps {
   gift: EscrowGift;
 }
 
 export function QRCodeDisplay({ gift }: QRCodeDisplayProps) {
+  const qrRef = useRef<any>(null);
+
   const generateClaimUrl = () => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
     return `${baseUrl}/claim/${gift.id}`;
@@ -19,33 +22,34 @@ export function QRCodeDisplay({ gift }: QRCodeDisplayProps) {
   const claimUrl = generateClaimUrl();
 
   const downloadQRCode = () => {
-    const svg = document.getElementById("qr-code-svg");
-    if (!svg) return;
+    if (qrRef.current) {
+      qrRef.current.download("png", `gift-qr-${gift.id}.png`);
+      toast.success("QR code downloaded!");
+    }
+  };
 
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
+  const copyClaimLink = () => {
+    navigator.clipboard.writeText(claimUrl);
+    toast.success("Claim link copied!");
+  };
 
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `gift-qr-${gift.id}.png`;
-          link.click();
-          URL.revokeObjectURL(url);
-          toast.success("QR code downloaded!");
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "USDC Gift Card",
+          text: `You've received ${gift.amount} USDC! Claim your gift:`,
+          url: claimUrl,
+        });
+        toast.success("Shared successfully!");
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          copyClaimLink();
         }
-      });
-    };
-
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+      }
+    } else {
+      copyClaimLink();
+    }
   };
 
   return (
@@ -59,34 +63,69 @@ export function QRCodeDisplay({ gift }: QRCodeDisplayProps) {
         <p className="text-zinc-400">Share this QR code with the recipient to claim</p>
       </div>
 
-      {/* Changed layout to flex-col and added a download button */}
       <div className="flex flex-col items-center gap-4">
         <div className="p-6 bg-white rounded-3xl shadow-2xl shadow-violet-500/20">
-          <QRCodeSVG
-            id="qr-code-svg"
+          <QRCode
+            ref={qrRef}
             value={claimUrl}
             size={240}
-            level="H"
-            includeMargin
+            ecLevel="H"
+            qrStyle="dots"
+            eyeRadius={8}
             bgColor="#ffffff"
             fgColor="#1e1b4b"
-            imageSettings={{
-              src: "/solana-logo.svg",
-              height: 40,
-              width: 40,
-              excavate: true,
-            }}
+            logoImage="/solana-logo.svg"
+            logoWidth={50}
+            logoHeight={50}
+            logoOpacity={1}
+            removeQrCodeBehindLogo={true}
+            logoPadding={5}
+            logoPaddingStyle="circle"
           />
         </div>
         
-        <Button
-          onClick={downloadQRCode}
-          variant="outline"
-          className="border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Download QR Code
-        </Button>
+        <div className="flex flex-wrap gap-2 justify-center">
+          <Button
+            onClick={downloadQRCode}
+            variant="outline"
+            className="border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download
+          </Button>
+          <Button
+            onClick={copyClaimLink}
+            variant="outline"
+            className="border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Copy Link
+          </Button>
+          <Button
+            onClick={handleShare}
+            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-4 rounded-xl bg-zinc-800/30 border border-zinc-700/30">
+        <p className="text-xs text-zinc-400 mb-2">Claim Link:</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 text-xs text-violet-300 bg-zinc-900/50 px-3 py-2 rounded-lg overflow-x-auto">
+            {claimUrl}
+          </code>
+          <Button
+            onClick={copyClaimLink}
+            size="sm"
+            variant="ghost"
+            className="text-zinc-400 hover:text-violet-400"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 space-y-3">

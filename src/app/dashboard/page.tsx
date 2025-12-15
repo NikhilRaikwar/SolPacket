@@ -15,6 +15,7 @@ import { USDC_MINT_DEVNET } from "@/lib/solana-config";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import jsQR from "jsqr";
 
 const Scanner = dynamic(
   () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
@@ -30,10 +31,9 @@ export default function DashboardPage() {
   const [receivableGifts, setReceivableGifts] = useState<EscrowGift[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "create" | "claim">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "create" | "claim" | "created" | "received">("overview");
   const [usdcBalance, setUsdcBalance] = useState<number>(0);
   const [showScanner, setShowScanner] = useState<boolean>(false);
-  const [uploadMode, setUploadMode] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
 
   const fetchData = async () => {
@@ -150,7 +150,13 @@ export default function DashboardPage() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      toast.error("No image selected");
+      return;
+    }
+
+    // Reset the input so the same file can be selected again
+    event.target.value = "";
 
     try {
       setVerifying(true);
@@ -166,19 +172,23 @@ export default function DashboardPage() {
           if (!ctx) {
             toast.error("Failed to process image");
             setVerifying(false);
+            URL.revokeObjectURL(imageUrl);
             return;
           }
           
           ctx.drawImage(img, 0, 0);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           
-          const { scanImage } = await import("@yudiel/react-qr-scanner");
-          const result = await scanImage(file);
+          // Try to decode QR code with jsQR
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert",
+          });
           
-          if (result && result.length > 0) {
-            await handleQRScan(result[0].rawValue);
+          if (code && code.data) {
+            console.log("QR Code detected:", code.data);
+            await handleQRScan(code.data);
           } else {
-            toast.error("No QR code found in image");
+            toast.error("No QR code found in image. Please try a clearer image.");
             setVerifying(false);
           }
         } catch (error) {
@@ -191,7 +201,7 @@ export default function DashboardPage() {
       };
 
       img.onerror = () => {
-        toast.error("Failed to load image");
+        toast.error("Failed to load image. Please try a different image.");
         setVerifying(false);
         URL.revokeObjectURL(imageUrl);
       };
@@ -208,6 +218,7 @@ export default function DashboardPage() {
   const totalSent = sentGifts.filter(g => g.claimed).reduce((sum, g) => sum + g.amount, 0);
   const totalReceived = receivableGifts.filter(g => g.claimed).reduce((sum, g) => sum + g.amount, 0);
   const activeGifts = sentGifts.filter(g => !g.claimed).length;
+  const totalClaimedCount = receivableGifts.filter(g => g.claimed).length;
 
   const renderGiftCard = (gift: EscrowGift, isSent: boolean) => {
     const isExpired = Date.now() > gift.expiresAt;
@@ -344,7 +355,6 @@ export default function DashboardPage() {
                 size="sm"
                 onClick={() => {
                   setShowScanner(false);
-                  setUploadMode(false);
                   setVerifying(false);
                 }}
                 className="text-zinc-400 hover:text-white"
@@ -358,39 +368,6 @@ export default function DashboardPage() {
                 <Loader2 className="h-12 w-12 text-violet-400 animate-spin mb-4" />
                 <p className="text-zinc-400">Verifying gift card...</p>
               </div>
-            ) : uploadMode ? (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center">
-                  <Upload className="h-12 w-12 text-zinc-500 mx-auto mb-4" />
-                  <p className="text-sm text-zinc-400 mb-4">
-                    Upload a QR code image to verify and claim your gift
-                  </p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="qr-upload"
-                  />
-                  <label htmlFor="qr-upload">
-                    <Button
-                      type="button"
-                      className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
-                      onClick={() => document.getElementById("qr-upload")?.click()}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose Image
-                    </Button>
-                  </label>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full border-zinc-700 text-zinc-300"
-                  onClick={() => setUploadMode(false)}
-                >
-                  Scan with Camera
-                </Button>
-              </div>
             ) : (
               <>
                 <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black">
@@ -400,9 +377,18 @@ export default function DashboardPage() {
                         handleQRScan(result[0].rawValue);
                       }
                     }}
+                    onError={(error) => {
+                      console.error("Scanner error:", error);
+                      toast.error("Camera access failed. Please check permissions.");
+                    }}
+                    formats={["qr_code"]}
+                    constraints={{
+                      facingMode: "environment",
+                    }}
                     components={{
                       audio: false,
                       finder: true,
+                      tracker: false,
                     }}
                     styles={{
                       container: { width: "100%", height: "100%" },
@@ -412,14 +398,6 @@ export default function DashboardPage() {
                 <p className="text-sm text-zinc-400 text-center">
                   Position the QR code within the frame to scan
                 </p>
-                <Button
-                  variant="outline"
-                  className="w-full border-zinc-700 text-zinc-300"
-                  onClick={() => setUploadMode(true)}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload QR Code Image
-                </Button>
               </>
             )}
           </div>
@@ -479,28 +457,30 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20"
+                    className="p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setActiveTab("created")}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-zinc-400">Total Sent</span>
-                      <BarChart className="h-5 w-5 text-amber-400" />
+                      <span className="text-sm text-zinc-400">Total Created</span>
+                      <Send className="h-5 w-5 text-amber-400" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalSent.toFixed(2)} USDC</p>
-                    <p className="text-xs text-zinc-500 mt-1">{totalCreated} gifts created</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalCreated}</p>
+                    <p className="text-xs text-zinc-500 mt-1">{totalSent.toFixed(2)} USDC sent (claimed)</p>
                   </motion.div>
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20"
+                    className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setActiveTab("received")}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-zinc-400">Total Received</span>
-                      <TrendingUp className="h-5 w-5 text-blue-400" />
+                      <Inbox className="h-5 w-5 text-blue-400" />
                     </div>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalReceived.toFixed(2)} USDC</p>
-                    <p className="text-xs text-zinc-500 mt-1">{receivableGifts.filter(g => g.claimed).length} gifts claimed</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white">{receivableGifts.length}</p>
+                    <p className="text-xs text-zinc-500 mt-1">{totalClaimedCount} claimed ({totalReceived.toFixed(2)} USDC)</p>
                   </motion.div>
 
                   <motion.div
@@ -639,6 +619,89 @@ export default function DashboardPage() {
                         receivableGifts.map((gift) => renderGiftCard(gift, false))
                       )}
                     </div>
+                  </div>
+                )}
+
+                {activeTab === "created" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                          <Send className="h-6 w-6 text-amber-400" />
+                          Created Gifts
+                        </h3>
+                        <p className="text-zinc-400 text-sm mt-1">
+                          All gifts you've created
+                        </p>
+                      </div>
+                      <Button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        variant="outline"
+                        size="sm"
+                        className="border-zinc-700 text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </Button>
+                    </div>
+                    
+                    {sentGifts.length === 0 ? (
+                      <div className="text-center py-16 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
+                        <Send className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-white mb-2">No Created Gifts</h3>
+                        <p className="text-zinc-400">Create your first gift card to get started</p>
+                        <Button
+                          onClick={() => setActiveTab("create")}
+                          className="mt-4 bg-gradient-to-r from-violet-600 to-indigo-600"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Gift
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {sentGifts.map((gift) => renderGiftCard(gift, true))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "received" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                          <Inbox className="h-6 w-6 text-blue-400" />
+                          Received Gifts
+                        </h3>
+                        <p className="text-zinc-400 text-sm mt-1">
+                          All gifts sent to your wallet
+                        </p>
+                      </div>
+                      <Button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        variant="outline"
+                        size="sm"
+                        className="border-zinc-700 text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </Button>
+                    </div>
+                    
+                    {receivableGifts.length === 0 ? (
+                      <div className="text-center py-16 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
+                        <Inbox className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-white mb-2">No Received Gifts</h3>
+                        <p className="text-zinc-400">You haven't received any gifts yet</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {receivableGifts.map((gift) => renderGiftCard(gift, false))}
+                      </div>
+                    )}
                   </div>
                 )}
               </>

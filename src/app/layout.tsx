@@ -4,6 +4,7 @@ import "./globals.css";
 import { VisualEditsMessenger } from "orchids-visual-edits";
 import { Providers } from "@/components/providers";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
             }}
           />
         </Providers>
+        <Analytics />
         <VisualEditsMessenger />
       </body>
     </html>
