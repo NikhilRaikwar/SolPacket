@@ -477,9 +477,18 @@ export default function ClaimPage() {
                     handleQRScan(result[0].rawValue);
                   }
                 }}
+                onError={(error) => {
+                  console.error("Scanner error:", error);
+                  toast.error("Camera access failed. Please check permissions.");
+                }}
+                formats={["qr_code"]}
+                constraints={{
+                  facingMode: "environment",
+                }}
                 components={{
                   audio: false,
                   finder: true,
+                  tracker: false,
                 }}
                 styles={{
                   container: { width: "100%", height: "100%" },
