@@ -238,7 +238,7 @@ Or use [Solana Faucet](https://faucet.solana.com/)
 - [ ] Mobile-optimized UI/UX improvements
 - [ ] Transaction history and analytics
 
-### Phase 3: Ecosystem Growth 📅 (Planned - Q1 2025)
+### Phase 3: Ecosystem Growth 📅 (Planned - Q1 2026)
 - [ ] **Mainnet deployment** (post-audit)
 - [ ] Batch gift creation (bulk airdrops)
 - [ ] Custom branding for gifts (themes, images)
