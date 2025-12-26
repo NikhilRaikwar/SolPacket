@@ -8,7 +8,7 @@ SOLPACKET is a consumer-facing application that revolutionizes how people send c
 
 ## 🎥 Demo Video
 
-**[Watch Demo Video](YOUR_VIDEO_LINK_HERE)** (2-4 minutes)
+**[Watch Demo Video](https://www.youtube.com/watch?v=qWYM0Qfn75A)** (2-4 minutes)
 
 ## 🚀 Why Solana?
 
