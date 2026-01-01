@@ -31,7 +31,7 @@ export function Footer() {
 
         <div className="flex gap-4">
           <a 
-            href="https://twitter.com" 
+            href="https://twitter.com/NikhilRaikwarr" 
             target="_blank" 
             rel="noopener noreferrer"
             className="h-12 w-12 rounded-2xl bg-secondary border border-border flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-all group"
@@ -39,7 +39,7 @@ export function Footer() {
             <Twitter className="h-5 w-5 group-hover:scale-110 transition-transform" />
           </a>
           <a 
-            href="https://github.com" 
+            href="https://github.com/NikhilRaikwar/solpacket" 
             target="_blank" 
             rel="noopener noreferrer"
             className="h-12 w-12 rounded-2xl bg-secondary border border-border flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-all group"
