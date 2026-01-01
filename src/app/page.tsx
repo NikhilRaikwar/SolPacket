@@ -1,6 +1,7 @@
 "use client";
 
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import { Shield, Sparkles, QrCode, Lock, Zap, Gift, ArrowRight, Check, ChevronDown, Github, Twitter, ExternalLink, Rocket } from "lucide-react";
 import { ArrowRightIcon } from "@radix-ui/react-icons";
 import { motion } from "framer-motion";
@@ -18,79 +19,92 @@ export default function HomePage() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-zinc-950 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.1),transparent_50%)]" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl" />
+    <main className="min-h-screen bg-background relative overflow-hidden grainy selection:bg-primary/30 selection:text-primary-foreground">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute top-[10%] -right-[10%] w-[50%] h-[50%] bg-violet-600/10 rounded-full blur-[100px]" />
+        <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
+      </div>
 
       <Header />
 
-      <HeroSection />
-      <FeaturedCards />
-      <ProcessSection />
-      <RoadmapSection />
-      <FAQSection />
+      <div className="relative z-10">
+        <HeroSection />
+        <FeaturedCards />
+        <ProcessSection />
+        <RoadmapSection />
+        <FAQSection />
+      </div>
       <Footer />
     </main>
   );
 }
 
 function HeroSection() {
-  const { connected } = useWallet();
-  const router = useRouter();
-  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } },
+  };
+
   return (
-    <div className="relative z-10 pt-32 pb-20 px-4 hero-section">
+    <section className="relative pt-40 pb-24 px-6 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col items-center text-center"
         >
-          <div className="z-10 flex min-h-16 items-center justify-center mb-8">
-            <div
-              className={cn(
-                "group rounded-full border border-black/5 bg-neutral-100 text-base text-white transition-all ease-in hover:cursor-pointer hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800"
-              )}
-            >
-              <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
-                <span>✨ Introducing SolPacket</span>
-                <ArrowRightIcon className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
-              </AnimatedShinyText>
+          <motion.div variants={itemVariants} className="mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-primary">Solana Red Packets</span>
             </div>
-          </div>
+          </motion.div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
-            Red Packets <br />
-            Reborn on Solana
+          <motion.h1 
+            variants={itemVariants}
+            className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter leading-[0.9] mb-8 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/50"
+          >
+            SEND WEALTH <br />
+            <span className="text-primary italic font-light">INSTANTLY</span>
+          </motion.h1>
 
+          <motion.p 
+            variants={itemVariants}
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed font-sans"
+          >
+            Create private, expiring SOL & USDC drops with one tap. 
+            Digital traditions, secured by Solana's lightning speed.
+          </motion.p>
 
-          </h1>
-
-          <p className="text-xl sm:text-2xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Create private, expiring SOL & USDC drops with one tap. Share a QR, they scan and claim — powered by Solana speed.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <div className="wallet-connect-button">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="scale-110">
               <WalletButton />
             </div>
             <Link href="/#faq">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-zinc-800/50 border border-zinc-700/50 text-white font-semibold rounded-xl hover:bg-zinc-800 transition-all duration-200 flex items-center gap-2"
-              >
-                Learn More
-                <ArrowRight className="h-5 w-5" />
-              </motion.button>
+              <button className="px-8 py-3.5 rounded-xl bg-secondary border border-border text-foreground font-medium hover:bg-muted transition-all flex items-center gap-2 group">
+                How it works
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </button>
             </Link>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -99,63 +113,69 @@ function FeaturedCards() {
     {
       icon: Shield,
       title: "Escrow Protection",
-      description: "USDC is locked in secure program-controlled PDAs until claimed by the recipient."
+      description: "USDC is locked in secure program-controlled PDAs until claimed."
     },
     {
       icon: QrCode,
       title: "QR Code Magic",
-      description: "Generate instant QR codes that recipients can scan with any mobile device to claim."
+      description: "Generate instant QR codes that recipients can scan to claim."
     },
     {
       icon: Lock,
       title: "Recipient Verified",
-      description: "Only the designated wallet address can claim the gift - no unauthorized access."
+      description: "Only the designated wallet address can claim the gift."
     },
     {
       icon: Zap,
       title: "Lightning Fast",
-      description: "Built on Solana for sub-second confirmations and minimal transaction fees."
+      description: "Built on Solana for sub-second confirmations and minimal fees."
     }
   ];
 
   return (
-    <div className="relative z-10 py-20 px-4 border-t border-zinc-800/50">
+    <section className="py-32 px-6">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Why Choose SOLPACKET?
-          </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Privacy-first USDC gift cards powered by Solana escrow
-          </p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="p-6 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800/50 hover:border-violet-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10"
-            >
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center mb-4">
-                <feature.icon className="h-6 w-6 text-violet-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-              <p className="text-zinc-400 leading-relaxed">{feature.description}</p>
-            </motion.div>
-          ))}
+        <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+              The <span className="text-primary italic">Secure</span> Way <br />
+              to Gift on Chain
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-lg">
+              SolPacket combines ancient tradition with modern security. 
+              Our escrow system ensures your funds are safe and only reachable by the right eyes.
+            </p>
+          </motion.div>
+          
+          <div className="grid sm:grid-cols-2 gap-4">
+            {features.map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="p-8 rounded-3xl bg-card border border-border/50 hover:border-primary/50 transition-colors group relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <feature.icon className="h-24 w-24 text-primary" />
+                </div>
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <feature.icon className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -163,66 +183,59 @@ function ProcessSection() {
   const steps = [
     {
       number: "01",
-      title: "Connect Wallet",
-      description: "Link your Phantom or Solflare wallet securely to get started."
+      title: "Sync Wallet",
+      description: "Connect your Phantom or Solflare wallet instantly."
     },
     {
       number: "02",
-      title: "Create Gift",
-      description: "Enter recipient address, USDC amount, and optional message."
+      title: "Forge Gift",
+      description: "Specify amount, recipient, and your custom message."
     },
     {
       number: "03",
-      title: "Generate QR",
-      description: "Get a unique QR code linked to the escrow PDA for secure claiming."
+      title: "Mint Link",
+      description: "Secure the funds in escrow and generate a unique QR."
     },
     {
       number: "04",
-      title: "Share & Claim",
-      description: "Recipient scans QR code and claims USDC directly to their wallet."
+      title: "Seal & Send",
+      description: "Recipient scans and claims. Tradition complete."
     }
   ];
 
   return (
-    <div className="relative z-10 py-20 px-4 bg-gradient-to-b from-transparent to-zinc-900/30">
-      <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            How It Works
-          </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Four simple steps to USDC gift card creation
-          </p>
-        </motion.div>
+    <section className="py-32 px-6 bg-primary/5 relative overflow-hidden">
+      <div className="absolute inset-0 bg-mesh opacity-30" />
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="text-center mb-24">
+          <h2 className="text-4xl md:text-6xl font-bold mb-6">Simple. Fast. Final.</h2>
+          <p className="text-muted-foreground text-lg">Four steps to bridge the physical and digital gap.</p>
+        </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-4 gap-4">
           {steps.map((step, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="relative"
+              className="relative p-10 rounded-[2.5rem] bg-background border border-border/50 flex flex-col items-center text-center group hover:bg-card transition-colors"
             >
-              <div className="text-6xl font-bold text-violet-500/20 mb-4">{step.number}</div>
-              <h3 className="text-2xl font-semibold text-white mb-3">{step.title}</h3>
-              <p className="text-zinc-400 leading-relaxed">{step.description}</p>
+              <div className="text-5xl font-black text-primary/10 mb-6 group-hover:text-primary/20 transition-colors font-heading italic">
+                {step.number}
+              </div>
+              <h3 className="text-2xl font-bold mb-4">{step.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{step.description}</p>
               
               {i < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-12 -right-4 w-8 h-0.5 bg-gradient-to-r from-violet-500/50 to-transparent" />
+                <div className="hidden lg:block absolute top-1/2 -right-2 w-4 h-4 bg-primary/20 rounded-full blur-sm" />
               )}
             </motion.div>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -233,56 +246,43 @@ function RoadmapSection() {
       title: "Foundation",
       status: "Completed",
       items: [
-        "Core escrow smart contract deployment",
+        "Core escrow smart contract",
         "USDC token support",
         "Basic wallet integration",
-        "QR code generation system",
-        "Database and storage setup"
+        "QR code system"
       ]
     },
     {
       phase: "Phase 2",
-      title: "Enhanced Features",
+      title: "Enhanced",
       status: "In Progress",
       items: [
-        "Recipient address verification",
-        "Advanced message encryption",
-        "Mobile-optimized UI/UX",
-        "Transaction history and analytics",
+        "Recipient verification",
+        "Message encryption",
+        "Mobile-optimized UI",
         "Gift card templates"
       ]
     },
     {
       phase: "Phase 3",
-      title: "Ecosystem Growth",
+      title: "Expansion",
       status: "Planned",
       items: [
         "Mainnet deployment",
         "Batch gift creation",
-        "Custom branding for gifts",
-        "API for third-party integrations",
-        "Additional SPL token support"
+        "Custom branding",
+        "SPL token support"
       ]
     }
   ];
 
   return (
-    <div className="relative z-10 py-20 px-4 border-t border-zinc-800/50">
+    <section className="py-32 px-6">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Development Roadmap
-          </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Our journey to revolutionize USDC gift cards
-          </p>
-        </motion.div>
+        <div className="text-center mb-24">
+          <h2 className="text-4xl md:text-6xl font-bold mb-6">The Path Forward</h2>
+          <p className="text-muted-foreground text-lg">Building the future of digital gifting on Solana.</p>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {phases.map((phase, i) => (
@@ -292,29 +292,29 @@ function RoadmapSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="p-8 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800/50 hover:border-violet-500/30 transition-all duration-300"
+              className="p-10 rounded-3xl bg-card border border-border/50 hover:border-primary/30 transition-all group"
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <p className="text-sm text-violet-400 font-medium mb-1">{phase.phase}</p>
-                  <h3 className="text-2xl font-bold text-white">{phase.title}</h3>
+                  <span className="text-primary text-xs font-black uppercase tracking-widest block mb-2">{phase.phase}</span>
+                  <h3 className="text-3xl font-bold">{phase.title}</h3>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
                   phase.status === "Completed" 
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                     : phase.status === "In Progress"
-                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                    : "bg-zinc-700/50 text-zinc-400 border border-zinc-700"
+                    ? "bg-primary/10 text-primary border-primary/20 animate-pulse"
+                    : "bg-muted text-muted-foreground border-border"
                 }`}>
                   {phase.status}
                 </div>
               </div>
               
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {phase.items.map((item, j) => (
-                  <li key={j} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-violet-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-zinc-300 text-sm leading-relaxed">{item}</span>
+                  <li key={j} className="flex items-center gap-3 text-muted-foreground group-hover:text-foreground transition-colors">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+                    <span className="text-sm font-medium">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -322,7 +322,7 @@ function RoadmapSection() {
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -332,121 +332,51 @@ function FAQSection() {
   const faqs = [
     {
       question: "What is SOLPACKET?",
-      answer: "SOLPACKET is a USDC gift card platform on Solana. Create gift cards with USDC that are held in escrow until claimed by the designated recipient."
+      answer: "A high-security USDC gift card platform built on Solana. Funds are held in escrow and claimable via QR codes."
     },
     {
       question: "Which tokens are supported?",
-      answer: "Currently we exclusively support USDC on Solana devnet. All gift cards are created and claimed using USDC only."
+      answer: "Currently USDC on Devnet. We're expanding to SOL and other SPL tokens soon."
     },
     {
       question: "How does the escrow work?",
-      answer: "When you create a gift, USDC is transferred to a Program Derived Address (PDA) controlled by our smart contract. Only the designated recipient can claim the funds."
+      answer: "USDC is locked in a program-derived address. Only the recipient's signature can unlock the funds."
     },
     {
       question: "How long are gifts valid?",
-      answer: "Gifts remain claimable for 24 hours after creation. After expiry, unclaimed funds can be recovered by the sender."
-    },
-    {
-      question: "What fees do I pay?",
-      answer: "You only pay standard Solana network fees (typically <$0.01). We don't charge any additional platform fees."
-    },
-    {
-      question: "Can anyone claim my gift?",
-      answer: "No. Each gift is locked to a specific recipient wallet address. Only the designated recipient can claim the USDC from escrow."
+      answer: "Gifts last 24 hours. If unclaimed, the sender can recover the funds."
     }
   ];
 
   return (
-    <div id="faq" className="relative z-10 py-20 px-4 bg-gradient-to-b from-zinc-900/30 to-transparent">
+    <section id="faq" className="py-32 px-6 bg-secondary/30">
       <div className="max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-lg text-zinc-400">
-            Everything you need to know about SOLPACKET
-          </p>
-        </motion.div>
+        <div className="text-center mb-24">
+          <h2 className="text-4xl md:text-6xl font-bold mb-6">Common Questions</h2>
+          <p className="text-muted-foreground text-lg">Everything you need to know about SolPacket.</p>
+        </div>
 
         <div className="space-y-4">
           {faqs.map((faq, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800/50 overflow-hidden"
+              className="rounded-3xl border border-border/50 overflow-hidden bg-background"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-zinc-800/30 transition-colors"
+                className="w-full p-8 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
               >
-                <h3 className="text-lg font-semibold text-white pr-4">{faq.question}</h3>
-                <ChevronDown
-                  className={`h-5 w-5 text-violet-400 flex-shrink-0 transition-transform duration-300 ${
-                    openIndex === i ? "rotate-180" : ""
-                  }`}
-                />
+                <h3 className="text-xl font-bold">{faq.question}</h3>
+                <ChevronDown className={`h-5 w-5 text-primary transition-transform duration-500 ${openIndex === i ? "rotate-180" : ""}`} />
               </button>
               
-              <div
-                className={`overflow-hidden transition-all duration-300 ${
-                  openIndex === i ? "max-h-48" : "max-h-0"
-                }`}
-              >
-                <p className="px-6 pb-6 text-zinc-400 leading-relaxed">{faq.answer}</p>
+              <div className={`overflow-hidden transition-all duration-500 ease-in-out ${openIndex === i ? "max-h-40" : "max-h-0"}`}>
+                <p className="px-8 pb-8 text-muted-foreground leading-relaxed font-sans">{faq.answer}</p>
               </div>
             </motion.div>
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="relative z-10 border-t border-zinc-800/50 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col items-center justify-center gap-8 mb-12">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Image src="/logo.png" alt="SOLPACKET Logo" width={40} height={40} className="rounded-xl" />
-              <div>
-                <h3 className="text-lg font-bold text-white">SOLPACKET</h3>
-              </div>
-            </div>
-            <p className="text-zinc-400 mb-4">
-              Secure USDC gift cards with escrow protection on Solana.
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <a href="https://x.com/solpacket" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
-                <Twitter className="h-4 w-4 text-zinc-400" />
-              </a>
-              <a href="https://github.com/NikhilRaikwar/SolPacket" target="_blank" rel="noopener noreferrer" className="h-10 w-10 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center hover:bg-zinc-800 transition-colors">
-                <Github className="h-4 w-4 text-zinc-400" />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-8 border-t border-zinc-800/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-zinc-500">
-            © 2025 SOLPACKET. Built on Solana Devnet.
-          </p>
-          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <Zap className="h-3 w-3 text-emerald-400" />
-            <span className="text-xs text-emerald-400 font-medium">Devnet</span>
-          </div>
-        </div>
-      </div>
-    </footer>
+    </section>
   );
 }
