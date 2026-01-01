@@ -16,12 +16,12 @@ import {
   Clock,
   AlertTriangle,
   User,
-  Upload,
   QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WalletButton } from "@/components/wallet-button";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import {
   getEscrowGiftById,
   claimEscrowGift,
@@ -47,7 +47,6 @@ export default function ClaimPage() {
   const [gift, setGift] = useState<EscrowGift | null>(null);
   const [status, setStatus] = useState<ClaimStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [txSignature, setTxSignature] = useState<string>("");
   const [showScanner, setShowScanner] = useState<boolean>(false);
 
   const giftId = params.id as string;
@@ -71,21 +70,9 @@ export default function ClaimPage() {
         return;
       }
 
-      const slot = await connection.getSlot();
-      const currentBlockTime = await connection.getBlockTime(slot);
-      
-      if (currentBlockTime) {
-        const elapsed = currentBlockTime - foundGift.creationTimestamp;
-        if (elapsed > 86400) {
-          setStatus("expired");
-          setGift(foundGift);
-          toast.error("This gift has expired (24 hours)");
-          return;
-        }
-      } else if (Date.now() > foundGift.expiresAt) {
+      if (Date.now() > foundGift.expiresAt) {
         setStatus("expired");
         setGift(foundGift);
-        toast.error("This gift has expired");
         return;
       }
 
@@ -104,14 +91,14 @@ export default function ClaimPage() {
     
     if (!connected || !publicKey || !sendTransaction || !gift) {
       toast.error("Please connect your wallet first");
-      return false;
+      return;
     }
 
     if (publicKey.toBase58() !== gift.recipientPubKey) {
       setStatus("wrong_recipient");
       setErrorMessage("This gift is restricted to a different wallet address");
       toast.error("You are not the intended recipient");
-      return false;
+      return;
     }
 
     setStatus("claiming");
@@ -123,11 +110,9 @@ export default function ClaimPage() {
         gift.giftId
       );
 
-      toast.info("Please sign the claim transaction in your wallet...");
+      toast.info("Please sign the claim transaction...");
 
       const signature = await sendTransaction(claimTx, connection);
-
-      toast.info("Transaction sent, awaiting confirmation...");
 
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
       await connection.confirmTransaction({
@@ -141,27 +126,13 @@ export default function ClaimPage() {
         throw new Error("Failed to mark gift as claimed");
       }
       
-      setTxSignature(signature);
       setStatus("success");
-      toast.success(`Successfully claimed ${gift.amount} USDC from escrow!`);
-      return true;
+      toast.success(`Successfully claimed ${gift.amount} USDC!`);
 
     } catch (error: any) {
       console.error("Claim error:", error);
-      
-      if (error?.message?.includes("User rejected")) {
-        setStatus("ready");
-        toast.error("Transaction rejected by user");
-      } else if (error?.message?.includes("insufficient")) {
-        setStatus("error");
-        setErrorMessage("Insufficient funds for transaction fees");
-        toast.error("Insufficient funds for fees");
-      } else {
-        setStatus("error");
-        setErrorMessage(error?.message || "Transaction failed");
-        toast.error("Claim failed");
-      }
-      return false;
+      setStatus("ready");
+      toast.error(error?.message || "Claim failed");
     }
   };
 
@@ -172,7 +143,6 @@ export default function ClaimPage() {
       const scannedGiftId = pathSegments[pathSegments.length - 1];
       
       if (scannedGiftId) {
-        toast.success("QR Code scanned successfully!");
         setShowScanner(false);
         router.push(`/claim/${scannedGiftId}`);
       } else {
@@ -187,41 +157,33 @@ export default function ClaimPage() {
     switch (status) {
       case "loading":
         return (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 text-violet-400 animate-spin mb-4" />
-            <p className="text-zinc-400">Loading gift details...</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-16 w-16 text-primary animate-spin mb-8" />
+            <p className="text-muted-foreground font-heading italic tracking-tighter text-xl text-center">INITIALIZING CLAIM...</p>
           </div>
         );
 
       case "not_found":
         return (
           <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-              <XCircle className="h-8 w-8 text-red-400" />
+            <div className="h-24 w-24 rounded-[2rem] bg-red-500/10 flex items-center justify-center mx-auto mb-8 text-center">
+              <XCircle className="h-12 w-12 text-red-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Gift Not Found</h2>
-            <p className="text-zinc-400 mb-6">This cash drop doesn&apos;t exist or the link is invalid.</p>
-            <div className="flex flex-col gap-3">
+            <h2 className="text-4xl font-bold mb-4 font-heading tracking-tighter">GIFT NOT FOUND</h2>
+            <p className="text-muted-foreground mb-10 font-sans">This packet doesn't exist or the link has been corrupted.</p>
+            <div className="space-y-4">
               <Button
                 onClick={() => setShowScanner(true)}
-                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-widest"
               >
-                <QrCode className="h-4 w-4 mr-2" />
+                <QrCode className="h-5 w-5 mr-2" />
                 Scan QR Code
               </Button>
-              <div className="flex gap-3 justify-center">
-                <Link href="/">
-                  <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Create Your Own
-                  </Button>
-                </Link>
-                <Link href="/dashboard">
-                  <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                    Back to Dashboard
-                  </Button>
-                </Link>
-              </div>
+              <Link href="/" className="block">
+                <Button variant="secondary" className="w-full h-14 rounded-2xl border border-border">
+                  Back to Traditions
+                </Button>
+              </Link>
             </div>
           </div>
         );
@@ -229,166 +191,125 @@ export default function ClaimPage() {
       case "already_claimed":
         return (
           <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="h-8 w-8 text-amber-400" />
+            <div className="h-24 w-24 rounded-[2rem] bg-amber-500/10 flex items-center justify-center mx-auto mb-8">
+              <AlertTriangle className="h-12 w-12 text-amber-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Already Claimed</h2>
-            <p className="text-zinc-400 mb-6">This cash drop has already been redeemed.</p>
-            <div className="flex gap-3 justify-center">
-              <Link href="/">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Create Your Own
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </div>
+            <h2 className="text-4xl font-bold mb-4 font-heading tracking-tighter text-center">ALREADY SEALED</h2>
+            <p className="text-muted-foreground mb-10 font-sans">This packet has already been claimed by its recipient.</p>
+            <Link href="/dashboard" className="block">
+              <Button className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-widest">
+                Go to Dashboard
+              </Button>
+            </Link>
           </div>
         );
 
       case "expired":
         return (
-          <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-zinc-500/10 flex items-center justify-center mx-auto mb-4">
-              <Clock className="h-8 w-8 text-zinc-400" />
+          <div className="text-center py-12 text-center">
+            <div className="h-24 w-24 rounded-[2rem] bg-zinc-500/10 flex items-center justify-center mx-auto mb-8">
+              <Clock className="h-12 w-12 text-zinc-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Gift Expired</h2>
-            <p className="text-zinc-400 mb-2">This cash drop has expired and can no longer be claimed.</p>
-            <p className="text-sm text-zinc-500 mb-6">
-              Expired on {gift && new Date(gift.expiresAt).toLocaleString()}
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Link href="/">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Create Your Own
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </div>
+            <h2 className="text-4xl font-bold mb-4 font-heading tracking-tighter">GIFT EXPIRED</h2>
+            <p className="text-muted-foreground mb-10 font-sans">The 24-hour window for this packet has closed.</p>
+            <Link href="/" className="block">
+              <Button variant="secondary" className="w-full h-14 rounded-2xl border border-border">
+                Start New Tradition
+              </Button>
+            </Link>
           </div>
         );
 
       case "wrong_recipient":
         return (
           <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-              <User className="h-8 w-8 text-red-400" />
+            <div className="h-24 w-24 rounded-[2rem] bg-red-500/10 flex items-center justify-center mx-auto mb-8 text-center">
+              <User className="h-12 w-12 text-red-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Wrong Wallet</h2>
-            <p className="text-zinc-400 mb-2">This gift is restricted to a specific recipient address.</p>
-            <p className="text-sm text-zinc-500 mb-2 font-mono">
-              Expected: {gift?.recipientPubKey.slice(0, 8)}...{gift?.recipientPubKey.slice(-8)}
-            </p>
-            <p className="text-sm text-zinc-500 mb-6 font-mono">
-              Connected: {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Link href="/">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Create Your Own
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </div>
+            <h2 className="text-4xl font-bold mb-4 font-heading tracking-tighter">WRONG WALLET</h2>
+            <p className="text-muted-foreground mb-10 font-sans">You are not the intended recipient of this packet.</p>
+            <p className="text-xs font-mono text-muted-foreground mb-10">Connected: {publicKey?.toBase58().slice(0, 8)}...</p>
+            <Link href="/dashboard" className="block">
+              <Button variant="secondary" className="w-full h-14 rounded-2xl border border-border">
+                Back to Dashboard
+              </Button>
+            </Link>
           </div>
         );
 
       case "ready":
         return (
-          <div className="space-y-6">
+          <div className="space-y-10">
             <div className="text-center">
-              <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center mx-auto mb-4">
-                <Gift className="h-10 w-10 text-violet-400" />
-              </div>
-              <h2 className="text-3xl font-bold text-white mb-2">You&apos;ve Got a Gift!</h2>
-              <p className="text-zinc-400">Someone sent you a USDC cash drop</p>
+              <motion.div 
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="h-32 w-32 rounded-[2.5rem] bg-primary/10 flex items-center justify-center mx-auto mb-8 relative group"
+              >
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full group-hover:bg-primary/40 transition-colors" />
+                <Gift className="h-16 w-16 text-primary relative z-10" />
+              </motion.div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 font-heading tracking-tighter text-center">YOU&apos;VE GOT A <span className="text-primary italic">PACKET</span></h2>
+              <p className="text-muted-foreground text-lg text-center">A private gift awaits your signature.</p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-800/50 border border-zinc-700/50 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Amount</span>
-                <span className="text-2xl font-bold text-white">
-                  {gift?.amount} USDC
-                </span>
-              </div>
-              
-              {gift?.message && (
-                <div className="pt-4 border-t border-zinc-700/50">
-                  <p className="text-sm text-zinc-500 mb-1">Message from sender</p>
-                  <p className="text-white italic">&quot;{gift.message}&quot;</p>
+            <div className="p-10 rounded-[2.5rem] bg-background border border-border relative overflow-hidden group">
+              <div className="absolute inset-0 bg-mesh opacity-10 group-hover:opacity-20 transition-opacity" />
+              <div className="relative z-10 space-y-8 text-center">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AMOUNT</span>
+                  <span className="text-5xl font-black font-heading tracking-tighter">
+                    {gift?.amount} <span className="text-primary italic">USDC</span>
+                  </span>
                 </div>
+                
+                {gift?.message && (
+                  <div className="pt-8 border-t border-border/50 text-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-4">MESSAGE</span>
+                    <p className="text-xl italic font-serif leading-relaxed text-foreground/90">&quot;{gift.message}&quot;</p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-2 pt-8 border-t border-border/50">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Secured via Solana Escrow</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {!connected ? (
+                <div className="space-y-6 text-center">
+                  <p className="text-muted-foreground text-sm font-sans uppercase tracking-widest font-bold text-center">Connect to Claim</p>
+                  <div className="flex justify-center scale-125">
+                    <WalletButton disableRedirect />
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleClaim}
+                  className="w-full h-20 rounded-[1.5rem] bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] text-xl shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  <Sparkles className="h-6 w-6 mr-3" />
+                  CLAIM NOW
+                </Button>
               )}
-
-              <div className="flex items-center gap-2 pt-4 border-t border-zinc-700/50">
-                <Shield className="h-4 w-4 text-violet-400" />
-                <span className="text-sm text-zinc-400">Secured with PDA Escrow</span>
-              </div>
             </div>
-
-            {!connected ? (
-              <div className="space-y-4">
-                <p className="text-center text-zinc-400 text-sm">
-                  Connect your wallet to claim this gift
-                </p>
-                <div className="flex justify-center">
-                  <WalletButton disableRedirect />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleClaim(e);
-                  }}
-                  className="w-full h-14 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-200 text-lg"
-                >
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Claim {gift?.amount} USDC
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => setShowScanner(true)}
-                  variant="outline"
-                  className="w-full border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
-                >
-                  <QrCode className="h-4 w-4 mr-2" />
-                  Scan Another Gift
-                </Button>
-              </div>
-            )}
           </div>
         );
 
       case "claiming":
         return (
-          <div className="text-center py-12">
-            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center mx-auto mb-4">
-              <Loader2 className="h-10 w-10 text-violet-400 animate-spin" />
+          <div className="text-center py-20 text-center">
+            <div className="relative h-32 w-32 mx-auto mb-10">
+              <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Gift className="h-12 w-12 text-primary animate-pulse" />
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Processing Claim</h2>
-            <p className="text-zinc-400 mb-4">Claiming USDC from escrow...</p>
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-violet-400 animate-pulse" />
-              <div className="h-2 w-2 rounded-full bg-violet-400 animate-pulse delay-100" />
-              <div className="h-2 w-2 rounded-full bg-violet-400 animate-pulse delay-200" />
-            </div>
+            <h2 className="text-4xl font-bold mb-4 font-heading tracking-tighter italic">UNLOCKING...</h2>
+            <p className="text-muted-foreground text-lg text-center">Awaiting Solana network confirmation</p>
           </div>
         );
 
@@ -396,51 +317,25 @@ export default function ClaimPage() {
         return (
           <div className="text-center py-12">
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="h-20 w-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4"
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
+              className="h-32 w-32 rounded-[2.5rem] bg-emerald-500/10 flex items-center justify-center mx-auto mb-10 relative"
             >
-              <CheckCircle className="h-10 w-10 text-emerald-400" />
+              <div className="absolute inset-0 bg-emerald-500/20 blur-3xl animate-pulse" />
+              <CheckCircle className="h-16 w-16 text-emerald-500 relative z-10" />
             </motion.div>
-            <h2 className="text-3xl font-bold text-white mb-2">Claim Successful!</h2>
-            <p className="text-zinc-400 mb-6">
-              You received {gift?.amount} USDC
+            <h2 className="text-5xl font-bold mb-4 font-heading tracking-tighter text-center">SEAL BROKEN</h2>
+            <p className="text-muted-foreground text-xl mb-12 text-center">
+              {gift?.amount} USDC successfully transferred to your vault.
             </p>
-            <p className="text-sm text-zinc-500 mb-6">
-              The funds have been transferred to your wallet
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Link href="/">
-                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
-                  <Gift className="h-4 w-4 mr-2" />
-                  Create Your Own
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300">
+            <div className="grid grid-cols-1 gap-4">
+              <Link href="/dashboard" className="block w-full">
+                <Button className="w-full h-16 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-widest text-lg">
                   Back to Dashboard
                 </Button>
               </Link>
             </div>
-          </div>
-        );
-
-      case "error":
-        return (
-          <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-              <XCircle className="h-8 w-8 text-red-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Claim Failed</h2>
-            <p className="text-zinc-400 mb-6">{errorMessage}</p>
-            <Button
-              onClick={() => setStatus("ready")}
-              variant="outline"
-              className="border-zinc-700 text-zinc-300"
-            >
-              Try Again
-            </Button>
           </div>
         );
 
@@ -450,27 +345,29 @@ export default function ClaimPage() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.1),transparent_50%)]" />
-
+    <main className="min-h-screen bg-background relative overflow-hidden grainy">
+      <div className="absolute inset-0 bg-mesh opacity-20 pointer-events-none" />
+      <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      
       <Header />
 
       {showScanner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 p-6 space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Scan Gift QR Code</h3>
-              <Button
-                variant="ghost"
-                size="sm"
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-xl p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-card border border-border rounded-[2.5rem] p-8 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-black font-heading italic tracking-tighter">SCAN QR</h3>
+              <button
                 onClick={() => setShowScanner(false)}
-                className="text-zinc-400 hover:text-white"
+                className="p-2 hover:bg-muted rounded-full transition-colors"
               >
-                <XCircle className="h-5 w-5" />
-              </Button>
+                <XCircle className="h-6 w-6 text-muted-foreground" />
+              </button>
             </div>
-            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black">
+            <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-black border border-border">
               <Scanner
                 onScan={(result) => {
                   if (result && result.length > 0) {
@@ -479,41 +376,34 @@ export default function ClaimPage() {
                 }}
                 onError={(error) => {
                   console.error("Scanner error:", error);
-                  toast.error("Camera access failed. Please check permissions.");
+                  toast.error("Camera access failed.");
                 }}
                 formats={["qr_code"]}
-                constraints={{
-                  facingMode: "environment",
-                }}
-                components={{
-                  audio: false,
-                  finder: true,
-                  tracker: false,
-                }}
-                styles={{
-                  container: { width: "100%", height: "100%" },
-                }}
+                constraints={{ facingMode: "environment" }}
+                components={{ audio: false, finder: true, tracker: false }}
+                styles={{ container: { width: "100%", height: "100%" } }}
               />
             </div>
-            <p className="text-sm text-zinc-400 text-center">
-              Position the QR code within the frame to scan
-            </p>
-          </div>
+          </motion.div>
         </div>
       )}
 
-      <div className="relative z-10 pt-24 pb-16 px-4 min-h-screen flex items-center justify-center">
+      <div className="relative z-10 pt-32 pb-24 px-6 min-h-screen flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-xl"
         >
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800/50 shadow-2xl shadow-violet-500/5">
+          <div className="p-10 rounded-[3rem] bg-card border border-border shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+              <Sparkles className="h-32 w-32 text-primary" />
+            </div>
             {renderContent()}
-          </div>
-        </motion.div>
-      </div>
-    </main>
-  );
-}
+            </div>
+          </motion.div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }

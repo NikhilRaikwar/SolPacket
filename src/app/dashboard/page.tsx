@@ -5,17 +5,17 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
-import { Gift, Send, Inbox, Loader2, ExternalLink, CheckCircle, Clock, Copy, Plus, DollarSign, TrendingUp, BarChart, RefreshCw, QrCode, XCircle, Upload } from "lucide-react";
+import { Gift, Send, Inbox, Loader2, ExternalLink, CheckCircle, Clock, Copy, Plus, DollarSign, RefreshCw, QrCode, XCircle } from "lucide-react";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import { WalletButton } from "@/components/wallet-button";
 import { Button } from "@/components/ui/button";
 import { getEscrowGiftsBySender, getEscrowGiftsByRecipient, getEscrowGiftById, type EscrowGift } from "@/lib/escrow-utils";
 import { GiftForm } from "@/components/gift-form";
 import { USDC_MINT_DEVNET } from "@/lib/solana-config";
-import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import jsQR from "jsqr";
+import { cn } from "@/lib/utils";
 
 const Scanner = dynamic(
   () => import("@yudiel/react-qr-scanner").then((mod) => mod.Scanner),
@@ -31,7 +31,7 @@ export default function DashboardPage() {
   const [receivableGifts, setReceivableGifts] = useState<EscrowGift[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "create" | "claim" | "created" | "received">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "create" | "claim">("overview");
   const [usdcBalance, setUsdcBalance] = useState<number>(0);
   const [showScanner, setShowScanner] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
@@ -59,11 +59,9 @@ export default function DashboardPage() {
         const account = await getAccount(connection, ata);
         setUsdcBalance(Number(account.amount) / 1_000_000);
       } catch (error) {
-        console.error("Failed to fetch USDC balance:", error);
         setUsdcBalance(0);
       }
     } catch (error) {
-      console.error("Failed to fetch data:", error);
       toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
@@ -148,77 +146,8 @@ export default function DashboardPage() {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      toast.error("No image selected");
-      return;
-    }
-
-    // Reset the input so the same file can be selected again
-    event.target.value = "";
-
-    try {
-      setVerifying(true);
-      const imageUrl = URL.createObjectURL(file);
-      const img = new Image();
-      
-      img.onload = async () => {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            toast.error("Failed to process image");
-            setVerifying(false);
-            URL.revokeObjectURL(imageUrl);
-            return;
-          }
-          
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          
-          // Try to decode QR code with jsQR
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "dontInvert",
-          });
-          
-          if (code && code.data) {
-            console.log("QR Code detected:", code.data);
-            await handleQRScan(code.data);
-          } else {
-            toast.error("No QR code found in image. Please try a clearer image.");
-            setVerifying(false);
-          }
-        } catch (error) {
-          console.error("QR scan error:", error);
-          toast.error("Failed to scan QR code from image");
-          setVerifying(false);
-        } finally {
-          URL.revokeObjectURL(imageUrl);
-        }
-      };
-
-      img.onerror = () => {
-        toast.error("Failed to load image. Please try a different image.");
-        setVerifying(false);
-        URL.revokeObjectURL(imageUrl);
-      };
-
-      img.src = imageUrl;
-    } catch (error) {
-      console.error("File upload error:", error);
-      toast.error("Failed to upload file");
-      setVerifying(false);
-    }
-  };
-
   const totalCreated = sentGifts.length;
-  const totalSent = sentGifts.filter(g => g.claimed).reduce((sum, g) => sum + g.amount, 0);
-  const totalReceived = receivableGifts.filter(g => g.claimed).reduce((sum, g) => sum + g.amount, 0);
   const activeGifts = sentGifts.filter(g => !g.claimed).length;
-  const totalClaimedCount = receivableGifts.filter(g => g.claimed).length;
 
   const renderGiftCard = (gift: EscrowGift, isSent: boolean) => {
     const isExpired = Date.now() > gift.expiresAt;
@@ -228,149 +157,121 @@ export default function DashboardPage() {
         key={gift.id}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-4 sm:p-6 rounded-2xl bg-zinc-800/50 border border-zinc-700/50 hover:border-violet-500/30 transition-all"
+        className="p-6 rounded-[2rem] bg-card border border-border/50 hover:border-primary/30 transition-all group"
       >
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-6">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-xl sm:text-2xl font-bold text-white">
-                {gift.amount} USDC
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <span className="text-3xl font-bold font-heading">
+                {gift.amount} <span className="text-primary italic">USDC</span>
               </span>
-              {gift.claimed && (
-                <span className="px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" />
-                  Claimed
-                </span>
-              )}
-              {!gift.claimed && isExpired && (
-                <span className="px-2 py-1 rounded-full bg-zinc-500/10 text-zinc-400 text-xs font-medium flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Expired
-                </span>
-              )}
-              {!gift.claimed && !isExpired && (
-                <span className="px-2 py-1 rounded-full bg-violet-500/10 text-violet-400 text-xs font-medium">
-                  Active
-                </span>
-              )}
+              <div className="flex gap-2">
+                {gift.claimed && (
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                    Claimed
+                  </span>
+                )}
+                {!gift.claimed && isExpired && (
+                  <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-[10px] font-black uppercase tracking-widest border border-border">
+                    Expired
+                  </span>
+                )}
+                {!gift.claimed && !isExpired && (
+                  <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20">
+                    Active
+                  </span>
+                )}
+              </div>
             </div>
             
             {gift.message && (
-              <p className="text-sm text-zinc-400 italic mb-3 truncate">"{gift.message}"</p>
+              <p className="text-sm text-muted-foreground italic mb-4">"{gift.message}"</p>
             )}
             
-            <div className="space-y-1 text-xs text-zinc-500">
+            <div className="space-y-1 text-[10px] font-mono text-muted-foreground uppercase tracking-tight">
               {isSent ? (
-                <p className="font-mono truncate">
-                  To: {gift.recipientPubKey.slice(0, 8)}...{gift.recipientPubKey.slice(-6)}
-                </p>
+                <p>To: {gift.recipientPubKey.slice(0, 12)}...{gift.recipientPubKey.slice(-8)}</p>
               ) : (
-                <p className="font-mono truncate">
-                  From: {gift.senderPublicKey.slice(0, 8)}...{gift.senderPublicKey.slice(-6)}
-                </p>
+                <p>From: {gift.senderPublicKey.slice(0, 12)}...{gift.senderPublicKey.slice(-8)}</p>
               )}
-              <p>Created: {new Date(gift.creationTimestamp * 1000).toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-3 flex-wrap">
           {isSent && !gift.claimed && !isExpired && (
             <Button
               onClick={() => copyClaimLink(gift.giftId)}
-              variant="outline"
-              size="sm"
-              className="flex-1 min-w-[120px] border-zinc-700 text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400"
+              variant="secondary"
+              className="flex-1 rounded-xl font-bold uppercase text-[10px] tracking-widest"
             >
-              <Copy className="h-4 w-4 mr-2" />
+              <Copy className="h-3 w-3 mr-2" />
               Copy Link
             </Button>
           )}
           
           {!isSent && !gift.claimed && !isExpired && (
             <Button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                router.push(`/claim/${gift.giftId}`);
-              }}
-              className="flex-1 min-w-[120px] bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+              onClick={() => router.push(`/claim/${gift.giftId}`)}
+              className="flex-1 rounded-xl font-bold uppercase text-[10px] tracking-widest"
             >
-              <Gift className="h-4 w-4" />
-              Claim Gift
+              <Gift className="h-3 w-3 mr-2" />
+              Claim
             </Button>
           )}
 
-          {gift.txSignature && (
-            <a
-              href={`https://explorer.solana.com/tx/${gift.txSignature}?cluster=devnet`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs border-zinc-700 text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10"
+          <div className="flex gap-2">
+            {gift.txSignature && (
+              <a
+                href={`https://explorer.solana.com/tx/${gift.txSignature}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-9 w-9 flex items-center justify-center rounded-xl bg-secondary border border-border hover:bg-primary/10 hover:text-primary transition-all"
               >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Creation Link
-              </Button>
-            </a>
-          )}
-          
-          <a
-            href={`https://explorer.solana.com/address/${gift.pdaAddress}?cluster=devnet`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs border-zinc-700 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              PDA Escrow Link
-            </Button>
-          </a>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+          </div>
         </div>
       </motion.div>
     );
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.1),transparent_50%)]" />
+    <main className="min-h-screen bg-background relative overflow-hidden grainy">
+      <div className="absolute inset-0 bg-mesh opacity-20 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -mr-64 -mt-64 pointer-events-none" />
 
       <Header />
 
       {showScanner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 p-6 space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Scan Gift QR Code</h3>
-              <Button
-                variant="ghost"
-                size="sm"
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-xl p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-card border border-border rounded-[2.5rem] p-8 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-black font-heading italic text-foreground tracking-tighter">SCAN QR</h3>
+              <button
                 onClick={() => {
                   setShowScanner(false);
                   setVerifying(false);
                 }}
-                className="text-zinc-400 hover:text-white"
+                className="p-2 hover:bg-muted rounded-full transition-colors"
               >
-                <XCircle className="h-5 w-5" />
-              </Button>
+                <XCircle className="h-6 w-6 text-muted-foreground" />
+              </button>
             </div>
 
             {verifying ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="h-12 w-12 text-violet-400 animate-spin mb-4" />
-                <p className="text-zinc-400">Verifying gift card...</p>
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="h-12 w-12 text-primary animate-spin mb-6" />
+                <p className="text-muted-foreground font-medium">Verifying gift card...</p>
               </div>
             ) : (
-              <>
-                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-black">
+              <div className="space-y-6">
+                <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-black border border-border">
                   <Scanner
                     onScan={(result) => {
                       if (result && result.length > 0) {
@@ -379,336 +280,190 @@ export default function DashboardPage() {
                     }}
                     onError={(error) => {
                       console.error("Scanner error:", error);
-                      toast.error("Camera access failed. Please check permissions.");
+                      toast.error("Camera access failed.");
                     }}
                     formats={["qr_code"]}
-                    constraints={{
-                      facingMode: "environment",
-                    }}
-                    components={{
-                      audio: false,
-                      finder: true,
-                      tracker: false,
-                    }}
-                    styles={{
-                      container: { width: "100%", height: "100%" },
-                    }}
+                    constraints={{ facingMode: "environment" }}
+                    components={{ audio: false, finder: true, tracker: false }}
+                    styles={{ container: { width: "100%", height: "100%" } }}
                   />
                 </div>
-                <p className="text-sm text-zinc-400 text-center">
-                  Position the QR code within the frame to scan
+                <p className="text-sm text-muted-foreground text-center font-sans">
+                  Position the QR code within the frame to claim
                 </p>
-              </>
+              </div>
             )}
-          </div>
+          </motion.div>
         </div>
       )}
 
-      <div className="relative z-10 pt-24 pb-16 px-4">
+      <div className="relative z-10 pt-32 pb-24 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             {!connected ? (
-              <div className="text-center py-16">
-                <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center mx-auto mb-6">
-                  <Gift className="h-10 w-10 text-violet-400" />
+              <div className="text-center py-32 bg-card/50 backdrop-blur-md border border-border rounded-[3rem]">
+                <div className="h-24 w-24 rounded-[2rem] bg-primary/10 flex items-center justify-center mx-auto mb-8">
+                  <Gift className="h-12 w-12 text-primary" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">Connect Your Wallet</h2>
-                <p className="text-zinc-400 mb-6 px-4">
-                  Connect your wallet to access your dashboard
+                <h2 className="text-4xl font-bold mb-6">Connect Your Wallet</h2>
+                <p className="text-muted-foreground mb-10 max-w-sm mx-auto">
+                  Access your private dashboard and manage your red packets.
                 </p>
-                <div className="flex justify-center">
+                <div className="flex justify-center scale-125">
                   <WalletButton />
                 </div>
               </div>
             ) : loading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="h-12 w-12 text-violet-400 animate-spin mb-4" />
-                <p className="text-zinc-400">Loading dashboard...</p>
+              <div className="flex flex-col items-center justify-center py-32">
+                <Loader2 className="h-16 w-16 text-primary animate-spin mb-6" />
+                <p className="text-muted-foreground font-heading italic text-xl">INITIALIZING DASHBOARD...</p>
               </div>
             ) : (
               <>
-                <div className="mb-8">
-                  <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-                    Welcome, {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
-                  </h1>
-                  <p className="text-zinc-400">Manage your USDC gift cards</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-zinc-400">USDC Balance</span>
-                      <DollarSign className="h-5 w-5 text-emerald-400" />
-                    </div>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{usdcBalance.toFixed(2)}</p>
-                    <p className="text-xs text-zinc-500 mt-1">USD Coin</p>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setActiveTab("created")}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-zinc-400">Total Created</span>
-                      <Send className="h-5 w-5 text-amber-400" />
-                    </div>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalCreated}</p>
-                    <p className="text-xs text-zinc-500 mt-1">{totalSent.toFixed(2)} USDC sent (claimed)</p>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setActiveTab("received")}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-zinc-400">Total Received</span>
-                      <Inbox className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{receivableGifts.length}</p>
-                    <p className="text-xs text-zinc-500 mt-1">{totalClaimedCount} claimed ({totalReceived.toFixed(2)} USDC)</p>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border border-violet-500/20"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-zinc-400">Active Gifts</span>
-                      <Gift className="h-5 w-5 text-violet-400" />
-                    </div>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{activeGifts}</p>
-                    <p className="text-xs text-zinc-500 mt-1">Awaiting claim</p>
-                  </motion.div>
-                </div>
-
-                <div className="flex gap-2 mb-6 p-1 bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-x-auto">
-                  <button
-                    onClick={() => setActiveTab("overview")}
-                    className={`flex-1 min-w-[100px] py-3 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base ${
-                      activeTab === "overview"
-                        ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <BarChart className="h-4 w-4" />
-                      <span className="hidden sm:inline">Overview</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("create")}
-                    className={`flex-1 min-w-[100px] py-3 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base ${
-                      activeTab === "create"
-                        ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      <span>Create</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("claim")}
-                    className={`flex-1 min-w-[100px] py-3 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base ${
-                      activeTab === "claim"
-                        ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Gift className="h-4 w-4" />
-                      <span>Claim</span>
-                    </div>
-                  </button>
-                </div>
-
-                {activeTab === "overview" && (
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-                          <Send className="h-5 w-5 sm:h-6 sm:w-6 text-violet-400" />
-                          Sent Gifts ({sentGifts.length})
-                        </h3>
-                        <Button
-                          onClick={handleRefresh}
-                          disabled={refreshing}
-                          variant="outline"
-                          size="sm"
-                          className="border-zinc-700 text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400"
-                        >
-                          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                          Refresh
-                        </Button>
-                      </div>
-                      {sentGifts.length === 0 ? (
-                        <div className="text-center py-12 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
-                          <Send className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-4" />
-                          <p className="text-zinc-400">No sent gifts yet</p>
-                        </div>
-                      ) : (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {sentGifts.slice(0, 4).map((gift) => renderGiftCard(gift, true))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                        <Inbox className="h-5 w-5 sm:h-6 sm:w-6 text-violet-400" />
-                        Received Gifts ({receivableGifts.length})
-                      </h3>
-                      {receivableGifts.length === 0 ? (
-                        <div className="text-center py-12 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
-                          <Inbox className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-4" />
-                          <p className="text-zinc-400">No received gifts yet</p>
-                        </div>
-                      ) : (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {receivableGifts.slice(0, 4).map((gift) => renderGiftCard(gift, false))}
-                        </div>
-                      )}
-                    </div>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+                  <div>
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4">
+                      HELLO, <span className="text-primary italic font-light">{publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}</span>
+                    </h1>
+                    <p className="text-muted-foreground text-lg">Manage your digital traditions on Solana.</p>
                   </div>
-                )}
-
-                {activeTab === "create" && (
-                  <div className="max-w-2xl mx-auto">
-                    <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800/50 shadow-2xl shadow-violet-500/5">
-                      <GiftForm />
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "claim" && (
-                  <div className="space-y-4">
+                  <div className="flex gap-4">
                     <Button
-                      onClick={() => setShowScanner(true)}
-                      className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                      onClick={handleRefresh}
+                      disabled={refreshing}
+                      variant="secondary"
+                      className="rounded-2xl h-14 px-8 border border-border hover:bg-muted"
                     >
-                      <QrCode className="h-4 w-4 mr-2" />
-                      Scan Gift QR Code
+                      <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                      Sync
                     </Button>
-                    
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {receivableGifts.length === 0 ? (
-                        <div className="col-span-full text-center py-16 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
-                          <Inbox className="h-10 w-10 sm:h-12 sm:w-12 text-zinc-600 mx-auto mb-4" />
-                          <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No Claimable Gifts</h3>
-                          <p className="text-zinc-400">You don't have any gifts to claim</p>
+                    <button
+                      onClick={() => setActiveTab("create")}
+                      className="bg-primary text-primary-foreground h-14 px-8 rounded-2xl font-bold flex items-center gap-2 hover:scale-105 transition-transform"
+                    >
+                      <Plus className="h-5 w-5" />
+                      CREATE NEW
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+                  {[
+                    { label: "USDC BALANCE", value: usdcBalance.toFixed(2), icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                    { label: "TOTAL SENT", value: totalCreated, icon: Send, color: "text-primary", bg: "bg-primary/10" },
+                    { label: "TOTAL RECEIVED", value: receivableGifts.length, icon: Inbox, color: "text-blue-500", bg: "bg-blue-500/10" },
+                    { label: "ACTIVE PACKETS", value: activeGifts, icon: Gift, color: "text-amber-500", bg: "bg-amber-500/10" }
+                  ].map((stat, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="p-8 rounded-[2.5rem] bg-card border border-border/50 group transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</span>
+                        <div className={cn("p-2 rounded-xl", stat.bg)}>
+                          <stat.icon className={cn("h-4 w-4", stat.color)} />
                         </div>
-                      ) : (
-                        receivableGifts.map((gift) => renderGiftCard(gift, false))
+                      </div>
+                      <p className="text-4xl font-bold font-heading">{stat.value}</p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 mb-12 p-2 bg-secondary/50 backdrop-blur-md rounded-[2rem] border border-border/50 w-fit">
+                  {["overview", "create", "claim"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab as any)}
+                      className={cn(
+                        "px-8 py-4 rounded-[1.5rem] font-bold text-sm uppercase tracking-widest transition-all",
+                        activeTab === tab 
+                          ? "bg-primary text-primary-foreground shadow-xl" 
+                          : "text-muted-foreground hover:text-foreground"
                       )}
-                    </div>
-                  </div>
-                )}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
 
-                {activeTab === "created" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                          <Send className="h-6 w-6 text-amber-400" />
-                          Created Gifts
-                        </h3>
-                        <p className="text-zinc-400 text-sm mt-1">
-                          All gifts you've created
-                        </p>
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {activeTab === "overview" && (
+                    <div className="grid lg:grid-cols-2 gap-12">
+                      <div className="space-y-8">
+                        <h3 className="text-3xl font-bold font-heading italic tracking-tighter">RECENT SENT</h3>
+                        {sentGifts.length === 0 ? (
+                          <div className="py-20 text-center rounded-[2.5rem] border border-dashed border-border">
+                            <p className="text-muted-foreground uppercase tracking-widest text-xs font-black">Empty Vault</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {sentGifts.slice(0, 3).map((gift) => renderGiftCard(gift, true))}
+                          </div>
+                        )}
                       </div>
-                      <Button
-                        onClick={handleRefresh}
-                        disabled={refreshing}
-                        variant="outline"
-                        size="sm"
-                        className="border-zinc-700 text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400"
-                      >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
-                      </Button>
+                      <div className="space-y-8">
+                        <h3 className="text-3xl font-bold font-heading italic tracking-tighter">RECENT RECEIVED</h3>
+                        {receivableGifts.length === 0 ? (
+                          <div className="py-20 text-center rounded-[2.5rem] border border-dashed border-border">
+                            <p className="text-muted-foreground uppercase tracking-widest text-xs font-black">Empty Inbox</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {receivableGifts.slice(0, 3).map((gift) => renderGiftCard(gift, false))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    
-                    {sentGifts.length === 0 ? (
-                      <div className="text-center py-16 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
-                        <Send className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-white mb-2">No Created Gifts</h3>
-                        <p className="text-zinc-400">Create your first gift card to get started</p>
-                        <Button
-                          onClick={() => setActiveTab("create")}
-                          className="mt-4 bg-gradient-to-r from-violet-600 to-indigo-600"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Gift
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {sentGifts.map((gift) => renderGiftCard(gift, true))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
 
-                {activeTab === "received" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                          <Inbox className="h-6 w-6 text-blue-400" />
-                          Received Gifts
-                        </h3>
-                        <p className="text-zinc-400 text-sm mt-1">
-                          All gifts sent to your wallet
-                        </p>
+                  {activeTab === "create" && (
+                    <div className="max-w-3xl">
+                      <div className="p-10 rounded-[3rem] bg-card border border-border shadow-2xl">
+                        <GiftForm />
                       </div>
-                      <Button
-                        onClick={handleRefresh}
-                        disabled={refreshing}
-                        variant="outline"
-                        size="sm"
-                        className="border-zinc-700 text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400"
-                      >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
-                      </Button>
                     </div>
-                    
-                    {receivableGifts.length === 0 ? (
-                      <div className="text-center py-16 px-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/50">
-                        <Inbox className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-white mb-2">No Received Gifts</h3>
-                        <p className="text-zinc-400">You haven't received any gifts yet</p>
+                  )}
+
+                  {activeTab === "claim" && (
+                    <div className="space-y-12">
+                      <button
+                        onClick={() => setShowScanner(true)}
+                        className="w-full h-32 rounded-[2.5rem] bg-primary/10 border border-primary/20 border-dashed hover:bg-primary/20 transition-all flex flex-col items-center justify-center gap-2 group"
+                      >
+                        <QrCode className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                        <span className="font-black font-heading uppercase tracking-widest text-primary">Open Scanner</span>
+                      </button>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {receivableGifts.length === 0 ? (
+                          <div className="col-span-full py-32 text-center rounded-[3rem] bg-card/50 border border-border">
+                            <p className="text-muted-foreground uppercase tracking-widest font-black">No Packets Found</p>
+                          </div>
+                        ) : (
+                          receivableGifts.map((gift) => renderGiftCard(gift, false))
+                        )}
                       </div>
-                    ) : (
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {receivableGifts.map((gift) => renderGiftCard(gift, false))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </motion.div>
               </>
             )}
           </motion.div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }
