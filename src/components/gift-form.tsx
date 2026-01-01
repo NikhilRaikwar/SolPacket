@@ -149,111 +149,107 @@ export function GiftForm() {
 
   if (createdGift) {
     return (
-      <div className="space-y-6">
-        <QRCodeDisplay gift={createdGift} />
+      <div className="space-y-10">
+        <div className="text-center">
+          <div className="h-20 w-20 rounded-[1.5rem] bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="h-10 w-10 text-emerald-500" />
+          </div>
+          <h2 className="text-3xl font-bold font-heading italic tracking-tighter">GIFT SEALED</h2>
+          <p className="text-muted-foreground text-sm">Your USDC is now locked in escrow.</p>
+        </div>
+        
+        <div className="bg-background rounded-[2rem] p-8 border border-border">
+          <QRCodeDisplay gift={createdGift} />
+        </div>
+
         <Button
           onClick={resetForm}
-          variant="outline"
-          className="w-full border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
+          variant="secondary"
+          className="w-full h-14 rounded-2xl border border-border font-bold uppercase tracking-widest"
         >
-          Create Another Gift
+          Create Another
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center">
-          <Gift className="h-6 w-6 text-violet-400" />
+    <div className="space-y-10">
+      <div className="flex items-center gap-4">
+        <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Gift className="h-7 w-7 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-white">Create Cash Drop</h2>
-          <p className="text-sm text-zinc-400">Send USDC gift cards via escrow</p>
+          <h2 className="text-3xl font-bold font-heading italic tracking-tighter uppercase">FORGE PACKET</h2>
+          <p className="text-muted-foreground text-xs font-black uppercase tracking-widest">Digital traditions on Solana</p>
         </div>
       </div>
 
-      {usdcBalance !== null && (
-        <div className="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
-          <p className="text-sm text-zinc-400">Available USDC Balance</p>
-          <p className="text-2xl font-bold text-white">{usdcBalance.toFixed(2)} USDC</p>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="amount" className="text-zinc-300 flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Amount (USDC)
-          </Label>
-          <Input
-            id="amount"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="bg-zinc-800/50 border-zinc-700/50 text-white placeholder:text-zinc-500"
-            aria-label="Enter USDC amount"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="recipient" className="text-zinc-300 flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Recipient Wallet Address
-          </Label>
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <Label htmlFor="recipient" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">RECIPIENT WALLET</Label>
           <Input
             id="recipient"
-            type="text"
-            placeholder="Enter Solana wallet address"
+            placeholder="Address..."
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
-            className="bg-zinc-800/50 border-zinc-700/50 text-white placeholder:text-zinc-500 font-mono text-sm"
-            aria-label="Enter recipient wallet address"
+            className="h-14 rounded-2xl bg-background border-border/50 font-mono text-sm focus:border-primary/50 transition-colors"
           />
-          <p className="text-xs text-zinc-500">Only this wallet will be able to claim the gift</p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="message" className="text-zinc-300 flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Message (Optional)
-          </Label>
-          <Textarea
-            id="message"
-            placeholder="Happy holidays! Here's a little something..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="bg-zinc-800/50 border-zinc-700/50 text-white placeholder:text-zinc-500 min-h-[80px]"
-            aria-label="Enter optional message"
-          />
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <Label htmlFor="amount" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">AMOUNT (USDC)</Label>
+            <div className="relative">
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-14 rounded-2xl bg-background border-border/50 pl-12 font-bold focus:border-primary/50 transition-colors"
+              />
+              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+            </div>
+            {usdcBalance !== null && (
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Balance: {usdcBalance.toFixed(2)} USDC</p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <Label htmlFor="message" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">MESSAGE</Label>
+            <Textarea
+              id="message"
+              placeholder="Private note..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="h-14 min-h-[3.5rem] rounded-2xl bg-background border-border/50 resize-none py-4 focus:border-primary/50 transition-colors italic"
+            />
+          </div>
         </div>
       </div>
 
       <Button
         onClick={handleCreateGift}
         disabled={!connected || isLoading || !amount || !recipientAddress}
-        className="w-full h-12 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full h-20 rounded-[1.5rem] bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] text-xl shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
       >
         {isLoading ? (
           <>
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Creating Escrow...
+            <Loader2 className="h-6 w-6 mr-3 animate-spin" />
+            SEALING...
           </>
         ) : (
           <>
-            <Sparkles className="h-5 w-5 mr-2" />
-            Create USDC Gift Card
+            <Sparkles className="h-6 w-6 mr-3" />
+            MINT PACKET
           </>
         )}
       </Button>
 
       {!connected && (
-        <p className="text-center text-sm text-zinc-500">
-          Connect your wallet to create a cash drop
+        <p className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          Connect wallet to begin ceremony
         </p>
       )}
     </div>

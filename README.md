@@ -8,7 +8,7 @@ SOLPACKET is a consumer-facing application that revolutionizes how people send c
 
 ## 🎥 Demo Video
 
-**[Watch Demo Video](YOUR_VIDEO_LINK_HERE)** (2-4 minutes)
+**[Watch Demo Video](https://www.youtube.com/watch?v=qWYM0Qfn75A)** (2-4 minutes)
 
 ## 🚀 Why Solana?
 
@@ -238,7 +238,7 @@ Or use [Solana Faucet](https://faucet.solana.com/)
 - [ ] Mobile-optimized UI/UX improvements
 - [ ] Transaction history and analytics
 
-### Phase 3: Ecosystem Growth 📅 (Planned - Q1 2025)
+### Phase 3: Ecosystem Growth 📅 (Planned - Q1 2026)
 - [ ] **Mainnet deployment** (post-audit)
 - [ ] Batch gift creation (bulk airdrops)
 - [ ] Custom branding for gifts (themes, images)
