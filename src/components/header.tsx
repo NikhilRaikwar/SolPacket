@@ -1,6 +1,6 @@
 "use client";
 
-import { Zap } from "lucide-react";
+import { Zap, Plus } from "lucide-react";
 import { WalletButton } from "./wallet-button";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,8 +40,17 @@ export function Header() {
             <Link href="/#process" className="hover:text-foreground transition-colors">Process</Link>
             <Link href="/#faq" className="hover:text-foreground transition-colors">FAQ</Link>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <div className="flex items-center gap-4">
+              {connected && (
+                <Link href="/dashboard?tab=create">
+                  <button className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-bold text-xs uppercase tracking-widest">
+                    <Plus className="h-4 w-4" />
+                    Create
+                  </button>
+                </Link>
+              )}
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold">Devnet</span>
             </div>

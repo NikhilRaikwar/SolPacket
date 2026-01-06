@@ -95,6 +95,14 @@ function HeroSection() {
             <div className="scale-110">
               <WalletButton />
             </div>
+            {connected && (
+              <Link href="/dashboard?tab=create">
+                <button className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold hover:scale-105 transition-all flex items-center gap-2 group shadow-xl shadow-primary/20">
+                  <Plus className="h-5 w-5" />
+                  Create Red Packet
+                </button>
+              </Link>
+            )}
             <Link href="/#faq">
               <button className="px-8 py-3.5 rounded-xl bg-secondary border border-border text-foreground font-medium hover:bg-muted transition-all flex items-center gap-2 group">
                 How it works
