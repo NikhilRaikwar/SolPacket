@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 import { motion } from "framer-motion";
@@ -14,7 +14,7 @@ import { getEscrowGiftsBySender, getEscrowGiftsByRecipient, getEscrowGiftById, t
 import { GiftForm } from "@/components/gift-form";
 import { USDC_MINT_DEVNET } from "@/lib/solana-config";
 import { toast } from "sonner";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const Scanner = dynamic(
@@ -22,11 +22,10 @@ const Scanner = dynamic(
   { ssr: false }
 );
 
-function DashboardContent() {
+export default function DashboardPage() {
   const { connected, publicKey } = useWallet();
   const { connection } = useConnection();
   const router = useRouter();
-  const searchParams = useSearchParams();
   
   const [sentGifts, setSentGifts] = useState<EscrowGift[]>([]);
   const [receivableGifts, setReceivableGifts] = useState<EscrowGift[]>([]);
@@ -37,13 +36,13 @@ function DashboardContent() {
   const [showScanner, setShowScanner] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
 
-  const fetchData = useCallback(async (silent = false) => {
+  const fetchData = async () => {
     if (!connected || !publicKey) {
       setLoading(false);
       return;
     }
 
-    if (!silent) setLoading(true);
+    setLoading(true);
     try {
       const walletAddress = publicKey.toBase58();
       
@@ -65,27 +64,20 @@ function DashboardContent() {
     } catch (error) {
       toast.error("Failed to load dashboard data");
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
-  }, [connected, publicKey, connection]);
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchData(true);
+    await fetchData();
     setRefreshing(false);
     toast.success("Dashboard refreshed!");
   };
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab === "create" || tab === "overview" || tab === "claim") {
-      setActiveTab(tab as any);
-    }
-  }, [searchParams]);
+  }, [connected, publicKey, connection]);
 
   useEffect(() => {
     if (!connected && publicKey === null) {
@@ -439,7 +431,7 @@ function DashboardContent() {
                   {activeTab === "create" && (
                     <div className="max-w-3xl">
                       <div className="p-10 rounded-[3rem] bg-card border border-border shadow-2xl">
-                        <GiftForm onSuccess={() => fetchData(true)} />
+                        <GiftForm />
                       </div>
                     </div>
                   )}
@@ -473,18 +465,5 @@ function DashboardContent() {
       </div>
       <Footer />
     </main>
-  );
-}
-
-export default function DashboardPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-16 w-16 text-primary animate-spin mb-6" />
-        <p className="text-muted-foreground font-heading italic text-xl">LOADING DASHBOARD...</p>
-      </div>
-    }>
-      <DashboardContent />
-    </Suspense>
   );
 }

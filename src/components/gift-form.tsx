@@ -21,7 +21,7 @@ import {
 import { QRCodeDisplay } from "./qr-code-display";
 import { toast } from "sonner";
 
-export function GiftForm({ onSuccess }: { onSuccess?: () => void }) {
+export function GiftForm() {
   const router = useRouter();
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
@@ -117,14 +117,8 @@ export function GiftForm({ onSuccess }: { onSuccess?: () => void }) {
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       };
 
-        await saveEscrowGift(escrowGift);
-        setCreatedGift(escrowGift);
-        
-        // Trigger analytics refresh in parent
-        if (onSuccess) {
-          onSuccess();
-        }
-
+      await saveEscrowGift(escrowGift);
+      setCreatedGift(escrowGift);
 
       toast.success("Gift card created with USDC escrow!");
 
