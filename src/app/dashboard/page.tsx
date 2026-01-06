@@ -31,7 +31,7 @@ export default function DashboardPage() {
   const [receivableGifts, setReceivableGifts] = useState<EscrowGift[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "create" | "claim">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "create" | "claim" | "created" | "received">("overview");
   const [usdcBalance, setUsdcBalance] = useState<number>(0);
   const [showScanner, setShowScanner] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
@@ -284,7 +284,6 @@ export default function DashboardPage() {
                     }}
                     formats={["qr_code"]}
                     constraints={{ facingMode: "environment" }}
-                    components={{ audio: false, finder: true, tracker: false }}
                     styles={{ container: { width: "100%", height: "100%" } }}
                   />
                 </div>
@@ -354,8 +353,8 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
                   {[
                     { label: "USDC BALANCE", value: usdcBalance.toFixed(2), icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                    { label: "TOTAL SENT", value: totalCreated, icon: Send, color: "text-primary", bg: "bg-primary/10" },
-                    { label: "TOTAL RECEIVED", value: receivableGifts.length, icon: Inbox, color: "text-blue-500", bg: "bg-blue-500/10" },
+                    { label: "TOTAL SENT", value: totalCreated, icon: Send, color: "text-primary", bg: "bg-primary/10", onClick: () => setActiveTab("created") },
+                    { label: "TOTAL RECEIVED", value: receivableGifts.length, icon: Inbox, color: "text-blue-500", bg: "bg-blue-500/10", onClick: () => setActiveTab("received") },
                     { label: "ACTIVE PACKETS", value: activeGifts, icon: Gift, color: "text-amber-500", bg: "bg-amber-500/10" }
                   ].map((stat, i) => (
                     <motion.div
@@ -363,7 +362,11 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.1 }}
-                      className="p-8 rounded-[2.5rem] bg-card border border-border/50 group transition-all"
+                      className={cn(
+                        "p-8 rounded-[2.5rem] bg-card border border-border/50 group transition-all cursor-pointer hover:scale-105",
+                        stat.onClick ? "hover:border-primary/30" : ""
+                      )}
+                      onClick={stat.onClick}
                     >
                       <div className="flex items-center justify-between mb-6">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</span>
@@ -431,7 +434,7 @@ export default function DashboardPage() {
                   {activeTab === "create" && (
                     <div className="max-w-3xl">
                       <div className="p-10 rounded-[3rem] bg-card border border-border shadow-2xl">
-                        <GiftForm />
+                        <GiftForm onSuccess={() => fetchData(true)} />
                       </div>
                     </div>
                   )}
@@ -455,6 +458,85 @@ export default function DashboardPage() {
                           receivableGifts.map((gift) => renderGiftCard(gift, false))
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {activeTab === "created" && (
+                    <div className="space-y-8">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-3xl font-bold font-heading italic tracking-tighter flex items-center gap-3">
+                            <Send className="h-7 w-7 text-primary" />
+                            Created Gifts
+                          </h3>
+                          <p className="text-muted-foreground">All gifts you've created</p>
+                        </div>
+                        <Button
+                          onClick={handleRefresh}
+                          disabled={refreshing}
+                          variant="secondary"
+                          className="rounded-2xl h-12 px-6 border border-border hover:bg-muted"
+                        >
+                          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                          Sync
+                        </Button>
+                      </div>
+
+                      {sentGifts.length === 0 ? (
+                        <div className="py-32 text-center rounded-[3rem] bg-card/50 border border-border">
+                          <Send className="h-16 w-16 text-muted-foreground/50 mx-auto mb-6" />
+                          <h3 className="text-2xl font-bold mb-4">No Created Gifts</h3>
+                          <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
+                            Create your first gift card to get started
+                          </p>
+                          <Button
+                            onClick={() => setActiveTab("create")}
+                            className="rounded-2xl h-12 px-8 bg-primary text-primary-foreground hover:scale-105 transition-transform"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Gift
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid md:grid-cols-2 gap-6">
+                          {sentGifts.map((gift) => renderGiftCard(gift, true))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "received" && (
+                    <div className="space-y-8">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-3xl font-bold font-heading italic tracking-tighter flex items-center gap-3">
+                            <Inbox className="h-7 w-7 text-primary" />
+                            Received Gifts
+                          </h3>
+                          <p className="text-muted-foreground">All gifts sent to your wallet</p>
+                        </div>
+                        <Button
+                          onClick={handleRefresh}
+                          disabled={refreshing}
+                          variant="secondary"
+                          className="rounded-2xl h-12 px-6 border border-border hover:bg-muted"
+                        >
+                          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                          Sync
+                        </Button>
+                      </div>
+
+                      {receivableGifts.length === 0 ? (
+                        <div className="py-32 text-center rounded-[3rem] bg-card/50 border border-border">
+                          <Inbox className="h-16 w-16 text-muted-foreground/50 mx-auto mb-6" />
+                          <h3 className="text-2xl font-bold mb-4">No Received Gifts</h3>
+                          <p className="text-muted-foreground">You haven't received any gifts yet</p>
+                        </div>
+                      ) : (
+                        <div className="grid md:grid-cols-2 gap-6">
+                          {receivableGifts.map((gift) => renderGiftCard(gift, false))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </motion.div>

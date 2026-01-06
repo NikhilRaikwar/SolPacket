@@ -22,8 +22,8 @@ export function WalletButton({ disableRedirect = false }: WalletButtonProps) {
   }, [connected, disableRedirect, router]);
 
   return (
-    <div className="wallet-adapter-wrapper" suppressHydrationWarning>
-      <WalletMultiButton suppressHydrationWarning />
+    <div className="wallet-adapter-wrapper">
+      <WalletMultiButton />
     </div>
   );
 }

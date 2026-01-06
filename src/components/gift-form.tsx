@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
-import { Gift, Sparkles, MessageSquare, Loader2, User } from "lucide-react";
+import { Gift, Sparkles, MessageSquare, Loader2, User, CheckCircle, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import {
 import { QRCodeDisplay } from "./qr-code-display";
 import { toast } from "sonner";
 
-export function GiftForm() {
+export function GiftForm({ onSuccess }: { onSuccess?: () => void }) {
   const router = useRouter();
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
@@ -119,6 +119,11 @@ export function GiftForm() {
 
       await saveEscrowGift(escrowGift);
       setCreatedGift(escrowGift);
+      
+      // Trigger analytics refresh in parent
+      if (onSuccess) {
+        onSuccess();
+      }
 
       toast.success("Gift card created with USDC escrow!");
 
