@@ -31,7 +31,7 @@ export default function HomePage() {
       <Header />
 
       <div className="relative z-10">
-        <HeroSection />
+        <HeroSection connected={connected} />
         <FeaturedCards />
         <ProcessSection />
         <RoadmapSection />
@@ -42,7 +42,7 @@ export default function HomePage() {
   );
 }
 
-function HeroSection() {
+function HeroSection({ connected }: { connected: boolean }) {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {

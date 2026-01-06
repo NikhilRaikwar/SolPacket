@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 import { motion } from "framer-motion";
@@ -36,13 +36,13 @@ export default function DashboardPage() {
   const [showScanner, setShowScanner] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!connected || !publicKey) {
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const walletAddress = publicKey.toBase58();
       
@@ -64,20 +64,20 @@ export default function DashboardPage() {
     } catch (error) {
       toast.error("Failed to load dashboard data");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [connected, publicKey, connection]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await fetchData(true);
     setRefreshing(false);
     toast.success("Dashboard refreshed!");
   };
 
   useEffect(() => {
     fetchData();
-  }, [connected, publicKey, connection]);
+  }, [fetchData]);
 
   useEffect(() => {
     if (!connected && publicKey === null) {
@@ -380,7 +380,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex gap-2 mb-12 p-2 bg-secondary/50 backdrop-blur-md rounded-[2rem] border border-border/50 w-fit">
-                  {["overview", "create", "claim"].map((tab) => (
+                  {["overview", "create", "created", "received", "claim"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab as any)}
