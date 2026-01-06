@@ -354,16 +354,20 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
                   {[
                     { label: "USDC BALANCE", value: usdcBalance.toFixed(2), icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                    { label: "TOTAL SENT", value: totalCreated, icon: Send, color: "text-primary", bg: "bg-primary/10" },
-                    { label: "TOTAL RECEIVED", value: receivableGifts.length, icon: Inbox, color: "text-blue-500", bg: "bg-blue-500/10" },
-                    { label: "ACTIVE PACKETS", value: activeGifts, icon: Gift, color: "text-amber-500", bg: "bg-amber-500/10" }
+                    { label: "TOTAL SENT", value: totalCreated, icon: Send, color: "text-primary", bg: "bg-primary/10", onClick: () => setActiveTab("overview") },
+                    { label: "TOTAL RECEIVED", value: receivableGifts.length, icon: Inbox, color: "text-blue-500", bg: "bg-blue-500/10", onClick: () => setActiveTab("claim") },
+                    { label: "ACTIVE PACKETS", value: activeGifts, icon: Gift, color: "text-amber-500", bg: "bg-amber-500/10", onClick: () => setActiveTab("overview") }
                   ].map((stat, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.1 }}
-                      className="p-8 rounded-[2.5rem] bg-card border border-border/50 group transition-all"
+                      className={cn(
+                        "p-8 rounded-[2.5rem] bg-card border border-border/50 group transition-all cursor-pointer hover:scale-105",
+                        stat.onClick ? "hover:border-primary/30" : ""
+                      )}
+                      onClick={stat.onClick}
                     >
                       <div className="flex items-center justify-between mb-6">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</span>
